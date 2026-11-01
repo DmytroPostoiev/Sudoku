@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f5f5f5">
+    <title>Erweitertes Sudoku – iPhone 15 Pro Max</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --cell-bg-color: #ffffff;
+            --text-color: #1a1a1a;
+            --btn-color: #007aff;
+            --btn-text-color: #ffffff;
+            --highlight-color: #e3f2fd;
+            --correct-color: #a5d6a7;
+            --incorrect-color: #ef9a9a;
+            --conflict-color: #ffebee;
+            --number-bg-color: #f0f0f0;
+            --number-border-color: #d0d0d0;
+            --number-selection-bg: #e8e8e8;
+            --box-shadow-color: rgba(0,0,0,0.12);
+            --fixed-number-color: #000000;
+            --grid-line-color: #c8c8c8;
+            --grid-box-color: #1a1a1a;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+            --cell-size: min(9.5vw, 46px);
+            --number-size: min(11vw, 48px);
+            --btn-height: 48px;
+            --font-scale: 1;
+        }
+
+        .dark-mode {
+            --bg-color: #000000;
+            --cell-bg-color: #1c1c1e;
+            --text-color: #f2f2f7;
+            --btn-color: #0a84ff;
+            --btn-text-color: #ffffff;
+            --highlight-color: #1a3a5c;
+            --correct-color: #2d5a2d;
+            --incorrect-color: #8b3a3a;
+            --conflict-color: #5c2a2a;
+            --number-bg-color: #2c2c2e;
+            --number-border-color: #3a3a3c;
+            --number-selection-bg: #1c1c1e;
+            --box-shadow-color: rgba(0,0,0,0.4);
+            --fixed-number-color: #e5e5ea;
+            --grid-line-color: #3a3a3c;
+            --grid-box-color: #8e8e93;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: calc(12px + var(--safe-top)) calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(12px + var(--safe-left));
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            touch-action: manipulation;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overscroll-behavior: none;
+        }
+
+        .app-header {
+            width: 100%;
+            max-width: 430px;
+            text-align: center;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+
+        .app-title {
+            font-size: calc(18px * var(--font-scale));
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            opacity: 0.85;
+        }
+
+        .message {
+            font-size: calc(15px * var(--font-scale));
+            color: #34c759;
+            min-height: 22px;
+            margin: 4px 0 10px;
+            text-align: center;
+            font-weight: 500;
+            width: 100%;
+            max-width: 430px;
+            flex-shrink: 0;
+        }
+
+        .top-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+            max-width: 430px;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .toggle-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .toggle-label-top {
+            font-size: calc(12px * var(--font-scale));
+            font-weight: 500;
+            opacity: 0.75;
+            white-space: nowrap;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #c7c7cc;
+            transition: .25s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .25s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--btn-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .toggle-status {
+            font-size: calc(11px * var(--font-scale));
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+            width: 100%;
+            max-width: 430px;
+            flex-shrink: 0;
+        }
+
+        button {
+            height: var(--btn-height);
+            padding: 0 8px;
+            background-color: var(--btn-color);
+            color: var(--btn-text-color);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: calc(15px * var(--font-scale));
+            font-weight: 600;
+            box-shadow: 0 2px 6px var(--box-shadow-color);
+            transition: background-color 0.2s, transform 0.1s, opacity 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        button:active {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
+
+        button.active-mode {
+            background-color: #ff9500;
+            box-shadow: 0 0 0 2px rgba(255,149,0,0.4);
+        }
+
+        .number-selection {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 6px;
+            margin-bottom: 14px;
+            width: 100%;
+            max-width: 430px;
+            padding: 10px 8px;
+            background-color: var(--number-selection-bg);
+            border-radius: 14px;
+            border: 1px solid var(--number-border-color);
+            flex-shrink: 0;
+        }
+
+        .number-item {
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: var(--number-size);
+            max-height: var(--number-size);
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            background-color: var(--number-bg-color);
+            color: var(--text-color);
+            font-size: calc(20px * var(--font-scale));
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid var(--number-border-color);
+            transition: transform 0.12s, background-color 0.15s, opacity 0.2s;
+            -webkit-user-select: none;
+        }
+
+        .number-item:active {
+            transform: scale(0.9);
+            background-color: var(--highlight-color);
+        }
+
+        .number-item.selected {
+            background-color: var(--btn-color);
+            color: white;
+            border-color: var(--btn-color);
+            box-shadow: 0 0 0 3px rgba(0,122,255,0.3);
+        }
+
+        .number-item.used {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .number-item.dragging {
+            opacity: 0.5;
+        }
+
+        .sudoku-wrapper {
+            width: 100%;
+            max-width: 430px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+
+        .sudoku-container {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            border: 2.5px solid var(--grid-box-color);
+            width: 100%;
+            max-width: min(100%, 430px);
+            aspect-ratio: 1 / 1;
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: var(--grid-box-color);
+            gap: 0;
+        }
+
+        .cell {
+            background-color: var(--cell-bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: calc(22px * var(--font-scale));
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            border: 0.5px solid var(--grid-line-color);
+            transition: background-color 0.2s;
+            position: relative;
+            -webkit-user-select: none;
+        }
+
+        /* Dickere Linien für 3x3 Boxen */
+        .cell[data-col="2"],
+        .cell[data-col="5"] {
+            border-right: 2px solid var(--grid-box-color);
+        }
+        .cell[data-row="2"],
+        .cell[data-row="5"] {
+            border-bottom: 2px solid var(--grid-box-color);
+        }
+
+        .cell.selected {
+            background-color: var(--highlight-color);
+            box-shadow: inset 0 0 0 2px var(--btn-color);
+        }
+
+        .cell.highlighted {
+            background-color: var(--highlight-color);
+        }
+
+        .cell.valid {
+            color: #007aff;
+        }
+
+        .cell.correct {
+            background-color: var(--correct-color);
+            transition: background-color 0.3s;
+        }
+
+        .cell.incorrect {
+            background-color: var(--incorrect-color);
+            transition: background-color 0.3s;
+        }
+
+        .cell.conflict {
+            background-color: var(--conflict-color);
+        }
+
+        .fixed-number {
+            color: var(--fixed-number-color);
+            font-weight: 700;
+        }
+
+        /* Hover / Touch Feedback */
+        .check-mode .cell:not(.fixed-number):active {
+            background-color: var(--correct-color);
+        }
+        .correct-mode .cell:not(.fixed-number):active {
+            background-color: var(--correct-color);
+        }
+        .correct-mode .cell.highlighted {
+            background-color: var(--highlight-color);
+            animation: pulseHighlight 1.5s infinite;
+        }
+        .verify-mode .cell.correct-value:active {
+            background-color: var(--correct-color);
+        }
+        .verify-mode .cell.wrong-value:active {
+            background-color: var(--incorrect-color);
+        }
+
+        @keyframes correctAnimation {
+            0% { background-color: var(--highlight-color); }
+            50% { background-color: var(--correct-color); }
+            100% { background-color: var(--correct-color); }
+        }
+        @keyframes pulseHighlight {
+            0% { background-color: var(--highlight-color); }
+            50% { background-color: var(--btn-color); opacity: 0.55; }
+            100% { background-color: var(--highlight-color); }
+        }
+        .cell.correcting {
+            animation: correctAnimation 0.5s forwards;
+        }
+
+        .draggable { cursor: grab; }
+        .draggable:active { cursor: grabbing; }
+
+        /* Settings Panel */
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 100;
+            align-items: flex-end;
+            justify-content: center;
+            padding: var(--safe-bottom) var(--safe-right) var(--safe-bottom) var(--safe-left);
+        }
+        .settings-overlay.open {
+            display: flex;
+        }
+        .settings-panel {
+            background: var(--cell-bg-color);
+            color: var(--text-color);
+            width: 100%;
+            max-width: 430px;
+            border-radius: 20px 20px 0 0;
+            padding: 20px 20px calc(20px + var(--safe-bottom));
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .settings-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .settings-close {
+            background: transparent;
+            color: var(--btn-color);
+            box-shadow: none;
+            font-size: 16px;
+            height: auto;
+            padding: 8px 12px;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--number-border-color);
+        }
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+        .setting-label {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .size-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--number-bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--number-border-color);
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: none;
+        }
+        .size-value {
+            min-width: 36px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Landscape Anpassungen */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body {
+                padding: calc(6px + var(--safe-top)) calc(8px + var(--safe-right)) calc(6px + var(--safe-bottom)) calc(8px + var(--safe-left));
+            }
+            .app-header, .message { display: none; }
+            .top-controls { margin-bottom: 6px; }
+            .controls { margin-bottom: 8px; gap: 6px; }
+            button { height: 40px; font-size: 14px; }
+            .number-selection { margin-bottom: 8px; padding: 6px; gap: 4px; }
+            .number-item { font-size: 16px; }
+            .sudoku-wrapper { max-height: calc(100dvh - 160px); }
+            .sudoku-container { max-width: min(100%, calc(100dvh - 170px)); }
+        }
+
+        /* Sehr schmale Geräte */
+        @media (max-width: 360px) {
+            .cell { font-size: calc(18px * var(--font-scale)); }
+            .number-item { font-size: calc(16px * var(--font-scale)); }
+            button { font-size: 13px; height: 44px; }
+            .controls { gap: 6px; }
+        }
+
+        /* iPhone 15 Pro Max und ähnliche (430pt Breite) */
+        @media (min-width: 390px) and (max-width: 440px) {
+            :root {
+                --cell-size: 46px;
+                --number-size: 46px;
+                --btn-height: 50px;
+            }
+            .cell { font-size: calc(24px * var(--font-scale)); }
+            .number-item { font-size: calc(22px * var(--font-scale)); }
+        }
+
+        /* Große Schrift-Skalierung */
+        body.large-font {
+            --font-scale: 1.15;
+        }
+        body.xlarge-font {
+            --font-scale: 1.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="app-title">Erweitertes Sudoku</div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <div class="top-controls">
+        <div class="toggle-container">
+            <span class="toggle-label-top">Schwierigkeit</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="difficulty-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-status" id="difficulty-label">Leicht</span>
+        </div>
+        <div class="toggle-container">
+            <span class="toggle-label-top">Sofort prüfen</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="instant-check-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-status" id="instant-check-label">Aus</span>
+        </div>
+        <div class="toggle-container">
+            <span class="toggle-label-top">Dark Mode</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="dark-mode-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-status" id="dark-mode-label">Aus</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="new-game">Neu</button>
+        <button id="check">Prüfen</button>
+        <button id="correct">Korrigieren</button>
+        <button id="settings-btn">Design</button>
+    </div>
+
+    <div class="number-selection" id="number-selection">
+        <!-- Ziffern werden dynamisch hinzugefügt -->
+    </div>
+
+    <div class="sudoku-wrapper">
+        <div class="sudoku-container" id="sudoku-container"></div>
+    </div>
+
+    <!-- Design-Einstellungen -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h2>Design anpassen</h2>
+                <button class="settings-close" id="settings-close">Fertig</button>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Schriftgröße</span>
+                <div class="setting-control">
+                    <button class="size-btn" id="font-smaller">A−</button>
+                    <span class="size-value" id="font-size-label">Normal</span>
+                    <button class="size-btn" id="font-larger">A+</button>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Dark Mode</span>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settings-dark-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Sofort prüfen</span>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settings-instant-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Hinweis</span>
+                <div class="setting-control" style="font-size:13px; opacity:0.7; max-width:180px; text-align:right;">
+                    Optimiert für iPhone 15 Pro Max
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Sudoku {
+            constructor(difficulty = 'easy') {
+                this.grid = Array(9).fill().map(() => Array(9).fill(0));
+                this.solution = Array(9).fill().map(() => Array(9).fill(0));
+                this.initialGrid = Array(9).fill().map(() => Array(9).fill(0));
+                this.difficulty = difficulty;
+                this.usedNumbers = Array(9).fill(0);
+                this.initializeGame();
+            }
+
+            initializeGame() {
+                this.generateSolution();
+                this.createPuzzle();
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        this.initialGrid[row][col] = this.grid[row][col];
+                    }
+                }
+            }
+
+            generateSolution() {
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        this.solution[i][j] = 0;
+                    }
+                }
+                for (let box = 0; box < 3; box++) {
+                    this.fillBox(box * 3, box * 3);
+                }
+                this.solveSudoku(this.solution);
+            }
+
+            fillBox(row, col) {
+                const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                this.shuffleArray(nums);
+                let numIndex = 0;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        this.solution[row + i][col + j] = nums[numIndex++];
+                    }
+                }
+            }
+
+            solveSudoku(grid) {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (grid[row][col] === 0) {
+                            for (let num = 1; num <= 9; num++) {
+                                if (this.isValidPlacement(grid, row, col, num)) {
+                                    grid[row][col] = num;
+                                    if (this.solveSudoku(grid)) return true;
+                                    grid[row][col] = 0;
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            createPuzzle() {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        this.grid[row][col] = this.solution[row][col];
+                    }
+                }
+                let cellsToRemove = this.difficulty === 'easy' ? 35 : 45;
+                let removed = 0;
+                while (removed < cellsToRemove) {
+                    const row = Math.floor(Math.random() * 9);
+                    const col = Math.floor(Math.random() * 9);
+                    if (this.grid[row][col] !== 0) {
+                        this.grid[row][col] = 0;
+                        removed++;
+                    }
+                }
+                this.countUsedNumbers();
+            }
+
+            countUsedNumbers() {
+                this.usedNumbers = Array(9).fill(0);
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        const value = this.grid[row][col];
+                        if (value > 0) this.usedNumbers[value - 1]++;
+                    }
+                }
+            }
+
+            isValidPlacement(grid, row, col, num) {
+                for (let c = 0; c < 9; c++) if (grid[row][c] === num) return false;
+                for (let r = 0; r < 9; r++) if (grid[r][col] === num) return false;
+                const boxRow = Math.floor(row / 3) * 3;
+                const boxCol = Math.floor(col / 3) * 3;
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        if (grid[boxRow + r][boxCol + c] === num) return false;
+                    }
+                }
+                return true;
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            placeNumber(row, col, num) {
+                if (this.grid[row][col] === 0 && this.isValidPlacement(this.grid, row, col, num)) {
+                    this.grid[row][col] = num;
+                    this.usedNumbers[num - 1]++;
+                    return true;
+                }
+                return false;
+            }
+
+            isSolutionComplete() {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (this.grid[row][col] !== this.solution[row][col]) return false;
+                    }
+                }
+                return true;
+            }
+
+            getConflicts(row, col, num) {
+                const conflicts = [];
+                for (let c = 0; c < 9; c++) {
+                    if (c !== col && this.grid[row][c] === num) conflicts.push({row, col: c});
+                }
+                for (let r = 0; r < 9; r++) {
+                    if (r !== row && this.grid[r][col] === num) conflicts.push({row: r, col});
+                }
+                const boxRow = Math.floor(row / 3) * 3;
+                const boxCol = Math.floor(col / 3) * 3;
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        const currentRow = boxRow + r;
+                        const currentCol = boxCol + c;
+                        if ((currentRow !== row || currentCol !== col) && this.grid[currentRow][currentCol] === num) {
+                            conflicts.push({row: currentRow, col: currentCol});
+                        }
+                    }
+                }
+                return conflicts;
+            }
+
+            isCellCorrect(row, col) {
+                return this.grid[row][col] === this.solution[row][col];
+            }
+
+            isOriginalCell(row, col) {
+                return this.initialGrid[row][col] !== 0;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let difficulty = 'easy';
+            let instantCheckMode = false;
+            let darkMode = false;
+            let fontScale = 1; // 1 = normal, 1.15 = large, 1.3 = xlarge
+
+            let game = new Sudoku(difficulty);
+            let draggingNumber = null;
+            let selectedCell = null;
+            let isCheckMode = false;
+            let isCorrectMode = false;
+            let isVerifyMode = false;
+
+            const sudokuContainer = document.getElementById('sudoku-container');
+            const numberSelection = document.getElementById('number-selection');
+            const newGameBtn = document.getElementById('new-game');
+            const checkBtn = document.getElementById('check');
+            const correctBtn = document.getElementById('correct');
+            const settingsBtn = document.getElementById('settings-btn');
+            const messageEl = document.getElementById('message');
+
+            const difficultyToggle = document.getElementById('difficulty-toggle');
+            const difficultyLabel = document.getElementById('difficulty-label');
+            const instantCheckToggle = document.getElementById('instant-check-toggle');
+            const instantCheckLabel = document.getElementById('instant-check-label');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const darkModeLabel = document.getElementById('dark-mode-label');
+
+            // Settings
+            const settingsOverlay = document.getElementById('settings-overlay');
+            const settingsClose = document.getElementById('settings-close');
+            const settingsDarkToggle = document.getElementById('settings-dark-toggle');
+            const settingsInstantToggle = document.getElementById('settings-instant-toggle');
+            const fontSmaller = document.getElementById('font-smaller');
+            const fontLarger = document.getElementById('font-larger');
+            const fontSizeLabel = document.getElementById('font-size-label');
+
+            // Preferences laden
+            try {
+                const saved = localStorage.getItem('sudokuPrefs');
+                if (saved) {
+                    const prefs = JSON.parse(saved);
+                    if (prefs.darkMode) {
+                        darkMode = true;
+                        darkModeToggle.checked = true;
+                        darkModeLabel.textContent = 'Ein';
+                        document.body.classList.add('dark-mode');
+                        document.querySelector('meta[name="theme-color"]').content = '#000000';
+                    }
+                    if (prefs.instantCheck) {
+                        instantCheckMode = true;
+                        instantCheckToggle.checked = true;
+                        instantCheckLabel.textContent = 'Ein';
+                    }
+                    if (prefs.fontScale) {
+                        fontScale = prefs.fontScale;
+                        applyFontScale();
+                    }
+                }
+            } catch (e) {}
+
+            function savePrefs() {
+                try {
+                    localStorage.setItem('sudokuPrefs', JSON.stringify({
+                        darkMode,
+                        instantCheck: instantCheckMode,
+                        fontScale
+                    }));
+                } catch (e) {}
+            }
+
+            function applyFontScale() {
+                document.body.classList.remove('large-font', 'xlarge-font');
+                if (fontScale >= 1.25) {
+                    document.body.classList.add('xlarge-font');
+                    fontSizeLabel.textContent = 'Groß';
+                } else if (fontScale >= 1.1) {
+                    document.body.classList.add('large-font');
+                    fontSizeLabel.textContent = 'Mittel';
+                } else {
+                    fontSizeLabel.textContent = 'Normal';
+                }
+            }
+
+            // Toggle Events
+            difficultyToggle.addEventListener('change', function() {
+                difficulty = this.checked ? 'normal' : 'easy';
+                difficultyLabel.textContent = this.checked ? 'Normal' : 'Leicht';
+                game = new Sudoku(difficulty);
+                initializeGrid();
+                initializeNumberSelection();
+                showMessage(`Schwierigkeit: ${this.checked ? 'Normal' : 'Leicht'}`);
+            });
+
+            instantCheckToggle.addEventListener('change', function() {
+                instantCheckMode = this.checked;
+                instantCheckLabel.textContent = this.checked ? 'Ein' : 'Aus';
+                settingsInstantToggle.checked = this.checked;
+                savePrefs();
+                showMessage(`Sofortige Prüfung: ${this.checked ? 'Aktiviert' : 'Deaktiviert'}`);
+            });
+
+            darkModeToggle.addEventListener('change', function() {
+                darkMode = this.checked;
+                darkModeLabel.textContent = this.checked ? 'Ein' : 'Aus';
+                settingsDarkToggle.checked = this.checked;
+                if (this.checked) {
+                    document.body.classList.add('dark-mode');
+                    document.querySelector('meta[name="theme-color"]').content = '#000000';
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    document.querySelector('meta[name="theme-color"]').content = '#f5f5f5';
+                }
+                savePrefs();
+                showMessage(`Dark Mode: ${this.checked ? 'Aktiviert' : 'Deaktiviert'}`);
+            });
+
+            // Settings Panel
+            settingsBtn.addEventListener('click', () => {
+                settingsDarkToggle.checked = darkMode;
+                settingsInstantToggle.checked = instantCheckMode;
+                settingsOverlay.classList.add('open');
+            });
+
+            settingsClose.addEventListener('click', () => {
+                settingsOverlay.classList.remove('open');
+            });
+
+            settingsOverlay.addEventListener('click', (e) => {
+                if (e.target === settingsOverlay) settingsOverlay.classList.remove('open');
+            });
+
+            settingsDarkToggle.addEventListener('change', function() {
+                darkModeToggle.checked = this.checked;
+                darkModeToggle.dispatchEvent(new Event('change'));
+            });
+
+            settingsInstantToggle.addEventListener('change', function() {
+                instantCheckToggle.checked = this.checked;
+                instantCheckToggle.dispatchEvent(new Event('change'));
+            });
+
+            fontSmaller.addEventListener('click', () => {
+                if (fontScale > 1) {
+                    fontScale = fontScale <= 1.15 ? 1 : 1.15;
+                    applyFontScale();
+                    savePrefs();
+                }
+            });
+
+            fontLarger.addEventListener('click', () => {
+                if (fontScale < 1.3) {
+                    fontScale = fontScale < 1.15 ? 1.15 : 1.3;
+                    applyFontScale();
+                    savePrefs();
+                }
+            });
+
+            function showMessage(text, duration = 2200) {
+                messageEl.textContent = text;
+                clearTimeout(messageEl._timeout);
+                messageEl._timeout = setTimeout(() => {
+                    if (!game.isSolutionComplete()) messageEl.textContent = '';
+                }, duration);
+            }
+
+            function initializeNumberSelection() {
+                numberSelection.innerHTML = '';
+                for (let i = 1; i <= 9; i++) {
+                    const numberItem = document.createElement('div');
+                    numberItem.classList.add('number-item', 'draggable');
+                    numberItem.textContent = i;
+                    numberItem.dataset.number = i;
+                    numberItem.setAttribute('draggable', 'true');
+                    numberItem.addEventListener('dragstart', handleDragStart);
+                    numberItem.addEventListener('dragend', handleDragEnd);
+                    if (game.usedNumbers[i - 1] >= 9) numberItem.classList.add('used');
+                    numberItem.addEventListener('click', handleNumberClick);
+                    numberSelection.appendChild(numberItem);
+                }
+            }
+
+            function initializeGrid() {
+                sudokuContainer.innerHTML = '';
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.addEventListener('dragover', handleDragOver);
+                        cell.addEventListener('drop', handleDrop);
+                        const value = game.grid[row][col];
+                        if (value !== 0) {
+                            cell.textContent = value;
+                            cell.classList.add('fixed-number');
+                            cell.dataset.fixed = 'true';
+                        } else {
+                            cell.addEventListener('click', handleCellClick);
+                        }
+                        sudokuContainer.appendChild(cell);
+                    }
+                }
+            }
+
+            function handleDragStart(e) {
+                draggingNumber = parseInt(this.dataset.number);
+                this.classList.add('dragging');
+                if (e.dataTransfer) {
+                    e.dataTransfer.setData('text/plain', draggingNumber);
+                    e.dataTransfer.effectAllowed = 'move';
+                    const dragImage = document.createElement('div');
+                    dragImage.textContent = draggingNumber;
+                    dragImage.style.cssText = 'position:absolute;top:-1000px;font-size:24px;font-weight:bold;';
+                    document.body.appendChild(dragImage);
+                    e.dataTransfer.setDragImage(dragImage, 0, 0);
+                    setTimeout(() => document.body.removeChild(dragImage), 0);
+                }
+            }
+
+            function handleDragEnd() {
+                this.classList.remove('dragging');
+                draggingNumber = null;
+            }
+
+            function handleDragOver(e) {
+                e.preventDefault();
+                if (!this.dataset.fixed) this.classList.add('highlighted');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('highlighted');
+                if (this.dataset.fixed || this.textContent) return;
+                const row = parseInt(this.dataset.row);
+                const col = parseInt(this.dataset.col);
+                if (draggingNumber) {
+                    placeNumberInCell(row, col, draggingNumber);
+                } else if (e.dataTransfer) {
+                    placeNumberInCell(row, col, parseInt(e.dataTransfer.getData('text/plain')));
+                }
+            }
+
+            function handleNumberClick() {
+                const number = parseInt(this.dataset.number);
+                if (game.usedNumbers[number - 1] >= 9) {
+                    showMessage('Diese Zahl wurde bereits 9 Mal verwendet!');
+                    return;
+                }
+                draggingNumber = number;
+                numberSelection.querySelectorAll('.number-item').forEach(item => item.classList.remove('selected'));
+                this.classList.add('selected');
+                if (selectedCell) {
+                    const row = parseInt(selectedCell.dataset.row);
+                    const col = parseInt(selectedCell.dataset.col);
+                    placeNumberInCell(row, col, number);
+                    selectedCell.classList.remove('selected');
+                    selectedCell = null;
+                    draggingNumber = null;
+                    this.classList.remove('selected');
+                } else {
+                    showMessage('Wähle eine leere Zelle im Sudoku.');
+                }
+            }
+
+            function handleCellClick() {
+                if (isVerifyMode) return;
+
+                if (isCorrectMode) {
+                    const row = parseInt(this.dataset.row);
+                    const col = parseInt(this.dataset.col);
+                    if (this.textContent === '' && this.dataset.correctValue && !this.dataset.fixed) {
+                        const correctNumber = parseInt(this.dataset.correctValue);
+                        this.textContent = correctNumber;
+                        this.classList.remove('highlighted');
+                        this.classList.add('correcting');
+                        setTimeout(() => {
+                            this.classList.remove('correcting');
+                            this.classList.add('valid');
+                        }, 500);
+                        game.grid[row][col] = correctNumber;
+                        game.usedNumbers[correctNumber - 1]++;
+                        delete this.dataset.correctValue;
+                        updateNumberSelection();
+                        if (game.isSolutionComplete()) celebrateSolution();
+                    }
+                    return;
+                }
+
+                if (draggingNumber !== null) {
+                    if (this.dataset.fixed || this.textContent) {
+                        showMessage('Diese Zelle ist bereits belegt!');
+                        return;
+                    }
+                    const row = parseInt(this.dataset.row);
+                    const col = parseInt(this.dataset.col);
+                    placeNumberInCell(row, col, draggingNumber);
+                    numberSelection.querySelectorAll('.number-item').forEach(item => item.classList.remove('selected'));
+                    draggingNumber = null;
+                    messageEl.textContent = '';
+                } else {
+                    if (this.dataset.fixed || this.textContent) return;
+                    if (selectedCell) selectedCell.classList.remove('selected');
+                    this.classList.add('selected');
+                    selectedCell = this;
+                    showMessage('Wähle eine Ziffer aus der oberen Leiste.');
+                }
+            }
+
+            function placeNumberInCell(row, col, number) {
+                if (game.usedNumbers[number - 1] >= 9) {
+                    showMessage('Diese Zahl wurde bereits 9 Mal verwendet!');
+                    return;
+                }
+                const conflicts = game.getConflicts(row, col, number);
+                if (conflicts.length > 0) {
+                    conflicts.forEach(conflict => {
+                        const conflictCell = document.querySelector(`.cell[data-row="${conflict.row}"][data-col="${conflict.col}"]`);
+                        if (conflictCell) {
+                            conflictCell.classList.add('conflict');
+                            setTimeout(() => conflictCell.classList.remove('conflict'), 1800);
+                        }
+                    });
+                    showMessage('Diese Zahl passt hier nicht!');
+                    return;
+                }
+
+                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                cell.textContent = number;
+
+                if (instantCheckMode) {
+                    if (number === game.solution[row][col]) {
+                        cell.classList.add('correct');
+                        setTimeout(() => {
+                            cell.classList.remove('correct');
+                            cell.classList.add('valid');
+                        }, 900);
+                    } else {
+                        cell.classList.add('incorrect');
+                        setTimeout(() => cell.classList.remove('incorrect'), 900);
+                    }
+                } else {
+                    cell.classList.add('valid');
+                }
+
+                game.grid[row][col] = number;
+                game.usedNumbers[number - 1]++;
+                updateNumberSelection();
+                if (game.isSolutionComplete()) celebrateSolution();
+            }
+
+            function updateNumberSelection() {
+                const numberItems = numberSelection.querySelectorAll('.number-item');
+                for (let i = 0; i < 9; i++) {
+                    if (game.usedNumbers[i] >= 9) numberItems[i].classList.add('used');
+                    else numberItems[i].classList.remove('used');
+                }
+            }
+
+            function celebrateSolution() {
+                messageEl.textContent = 'Glückwunsch! Sudoku gelöst! 🎉';
+                const allCells = document.querySelectorAll('.cell');
+                allCells.forEach((cell, index) => {
+                    setTimeout(() => {
+                        cell.classList.add('highlighted');
+                        setTimeout(() => cell.classList.remove('highlighted'), 900);
+                    }, index * 8);
+                });
+                setTimeout(() => { messageEl.textContent = ''; }, 4500);
+            }
+
+            newGameBtn.addEventListener('click', () => {
+                isCheckMode = false;
+                isCorrectMode = false;
+                isVerifyMode = false;
+                sudokuContainer.classList.remove('check-mode', 'correct-mode', 'verify-mode');
+                correctBtn.classList.remove('active-mode');
+                draggingNumber = null;
+                selectedCell = null;
+                game = new Sudoku(difficulty);
+                initializeGrid();
+                initializeNumberSelection();
+                showMessage('Neues Spiel!');
+            });
+
+            checkBtn.addEventListener('click', () => {
+                isCheckMode = false;
+                isCorrectMode = false;
+                isVerifyMode = false;
+                sudokuContainer.classList.remove('check-mode', 'correct-mode', 'verify-mode');
+                correctBtn.classList.remove('active-mode');
+
+                let emptyCells = 0;
+                let incorrectCells = 0;
+
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                        if (game.grid[row][col] === 0) {
+                            emptyCells++;
+                        } else if (!game.isOriginalCell(row, col)) {
+                            if (game.grid[row][col] === game.solution[row][col]) {
+                                cell.classList.add('correct');
+                            } else {
+                                cell.classList.add('incorrect');
+                                incorrectCells++;
+                            }
+                        }
+                    }
+                }
+
+                if (emptyCells > 0) {
+                    showMessage(`Noch ${emptyCells} Zellen zu füllen!`, 4000);
+                } else if (incorrectCells > 0) {
+                    showMessage(`Es gibt noch ${incorrectCells} falsche Einträge!`, 4000);
+                } else if (game.isSolutionComplete()) {
+                    celebrateSolution();
+                }
+
+                setTimeout(() => {
+                    document.querySelectorAll('.cell').forEach(cell => {
+                        cell.classList.remove('correct', 'incorrect', 'wrong');
+                    });
+                    if (!game.isSolutionComplete()) messageEl.textContent = '';
+                }, 5000);
+            });
+
+            correctBtn.addEventListener('click', () => {
+                isCheckMode = false;
+                isVerifyMode = false;
+                isCorrectMode = !isCorrectMode;
+                sudokuContainer.classList.remove('check-mode', 'verify-mode');
+
+                if (isCorrectMode) {
+                    sudokuContainer.classList.add('correct-mode');
+                    correctBtn.classList.add('active-mode');
+                    let deletedCount = 0;
+
+                    for (let row = 0; row < 9; row++) {
+                        for (let col = 0; col < 9; col++) {
+                            if (game.grid[row][col] !== 0 && !game.isOriginalCell(row, col)) {
+                                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                                if (game.grid[row][col] !== game.solution[row][col]) {
+                                    const oldNumber = game.grid[row][col];
+                                    game.grid[row][col] = 0;
+                                    game.usedNumbers[oldNumber - 1]--;
+                                    cell.textContent = '';
+                                    cell.classList.add('highlighted');
+                                    cell.dataset.correctValue = game.solution[row][col];
+                                    deletedCount++;
+                                }
+                            }
+                        }
+                    }
+                    updateNumberSelection();
+                    if (deletedCount > 0) {
+                        showMessage(`${deletedCount} falsche Einträge gelöscht. Tippe auf leere Zellen zum Korrigieren.`, 5000);
+                    } else {
+                        showMessage('Keine falschen Einträge gefunden!');
+                    }
+                } else {
+                    sudokuContainer.classList.remove('correct-mode');
+                    correctBtn.classList.remove('active-mode');
+                    messageEl.textContent = '';
+                    document.querySelectorAll('.cell').forEach(cell => {
+                        cell.classList.remove('highlighted', 'incorrect');
+                        delete cell.dataset.correctValue;
+                    });
+                }
+            });
+
+            // Tastatur
+            document.addEventListener('keydown', function(e) {
+                if (!selectedCell) return;
+                const row = parseInt(selectedCell.dataset.row);
+                const col = parseInt(selectedCell.dataset.col);
+
+                if (e.key >= '1' && e.key <= '9') {
+                    placeNumberInCell(row, col, parseInt(e.key));
+                    selectedCell.classList.remove('selected');
+                    selectedCell = null;
+                } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                    if (selectedCell.textContent && !selectedCell.dataset.fixed) {
+                        const oldNumber = parseInt(selectedCell.textContent);
+                        selectedCell.textContent = '';
+                        game.grid[row][col] = 0;
+                        game.usedNumbers[oldNumber - 1]--;
+                        updateNumberSelection();
+                        selectedCell.classList.remove('valid', 'correct', 'incorrect', 'wrong');
+                    }
+                } else if (e.key.startsWith('Arrow')) {
+                    let newRow = row, newCol = col;
+                    if (e.key === 'ArrowUp' && row > 0) newRow--;
+                    else if (e.key === 'ArrowDown' && row < 8) newRow++;
+                    else if (e.key === 'ArrowLeft' && col > 0) newCol--;
+                    else if (e.key === 'ArrowRight' && col < 8) newCol++;
+                    const newCell = document.querySelector(`.cell[data-row="${newRow}"][data-col="${newCol}"]`);
+                    if (newCell && !newCell.dataset.fixed) {
+                        selectedCell.classList.remove('selected');
+                        newCell.classList.add('selected');
+                        selectedCell = newCell;
+                    }
+                } else if (e.key === 'Enter') {
+                    if (selectedCell.textContent && !selectedCell.dataset.fixed) {
+                        const currentNumber = parseInt(selectedCell.textContent);
+                        if (currentNumber === game.solution[row][col]) {
+                            selectedCell.classList.add('correct');
+                            setTimeout(() => selectedCell.classList.remove('correct'), 4000);
+                        } else {
+                            selectedCell.classList.add('incorrect');
+                            setTimeout(() => selectedCell.classList.remove('incorrect'), 4000);
+                        }
+                    }
+                }
+            });
+
+            // Initialisieren
+            initializeGrid();
+            initializeNumberSelection();
+            applyFontScale();
+        });
+    </script>
+</body>
+</html>
