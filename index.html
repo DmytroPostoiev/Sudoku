@@ -31,6 +31,7 @@
             --safe-l: env(safe-area-inset-left, 0px);
             --safe-r: env(safe-area-inset-right, 0px);
             --fs: 1;
+            --pad: 12px;
         }
         .dark {
             --bg: #0d0d12;
@@ -71,18 +72,20 @@
             flex-direction: column;
             min-height: 100vh;
             min-height: 100dvh;
-            padding: calc(6px + var(--safe-t)) calc(8px + var(--safe-r)) calc(6px + var(--safe-b)) calc(8px + var(--safe-l));
+            padding: calc(var(--pad) + var(--safe-t)) calc(var(--pad) + var(--safe-r)) calc(var(--pad) + var(--safe-b)) calc(var(--pad) + var(--safe-l));
             transition: background-color 0.3s, color 0.3s;
             overscroll-behavior: none;
             touch-action: manipulation;
         }
+
+        /* Header */
         .header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             width: 100%;
             max-width: 520px;
-            margin: 0 auto 4px;
+            margin: 0 auto 6px;
             flex-shrink: 0;
         }
         .title {
@@ -102,43 +105,60 @@
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            flex-shrink: 0;
         }
         .gear:active { transform: scale(0.92); }
+
         .msg {
             min-height: 18px;
             font-size: calc(13px * var(--fs));
             text-align: center;
             color: #34c759;
             font-weight: 550;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             width: 100%;
             max-width: 520px;
             margin-left: auto;
             margin-right: auto;
             flex-shrink: 0;
         }
-        .board-area {
+
+        /* Hauptbereich: Grid + optionale Seitenleiste */
+        .main {
             flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             width: 100%;
             max-width: 520px;
             margin: 0 auto;
             min-height: 0;
-            position: relative;
+            gap: 10px;
         }
+
+        .board-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            gap: 8px;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(9, 1fr);
             grid-template-rows: repeat(9, 1fr);
-            width: min(100%, min(92vw, 92dvh - 100px));
+            width: min(100%, min(88vw, 72dvh));
             aspect-ratio: 1;
             border: 2.5px solid var(--grid-box);
             border-radius: 6px;
             overflow: hidden;
             background: var(--grid-box);
             box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            flex-shrink: 1;
         }
         .cell {
             background: var(--cell);
@@ -146,7 +166,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: calc(22px * var(--fs));
+            font-size: calc(21px * var(--fs));
             font-weight: 600;
             border: 0.5px solid var(--grid-line);
             cursor: pointer;
@@ -168,104 +188,57 @@
             0%,100% { background: var(--highlight); }
             50% { background: color-mix(in srgb, var(--accent) 40%, transparent); }
         }
-        .picker-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.45);
-            z-index: 150;
+
+        /* Rechte Seitenleiste (Zahlen vertikal) – nur wenn aktiv */
+        .side-nums {
             display: none;
-            align-items: center;
+            flex-direction: column;
+            gap: 6px;
             justify-content: center;
-            padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+            padding: 4px 0;
+            flex-shrink: 0;
         }
-        .picker-overlay.open { display: flex; }
-        .wheel {
-            position: relative;
-            width: min(300px, 78vw);
-            height: min(300px, 78vw);
-            border-radius: 50%;
+        .side-nums.show { display: flex; }
+        .side-nums .nbtn {
+            width: 44px;
+            height: 44px;
+        }
+
+        /* Untere Zahlenleiste – immer sichtbar wenn Zelle gewählt, Spielfeld bleibt sichtbar */
+        .bottom-nums {
+            display: none;
+            width: 100%;
+            max-width: 520px;
+            flex-shrink: 0;
+            padding: 8px 0 4px;
+        }
+        .bottom-nums.show { display: block; }
+
+        .nums-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             background: var(--panel);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .wheel-center {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: var(--muted);
-            border: 2px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text);
-            opacity: 0.75;
-            z-index: 2;
-            cursor: pointer;
-        }
-        .wheel-num {
-            position: absolute;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: var(--muted);
-            border: 2px solid var(--border);
-            color: var(--text);
-            font-size: calc(22px * var(--fs));
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.12s, background 0.15s, box-shadow 0.15s;
-            z-index: 3;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        .wheel-num:active { transform: scale(0.9); }
-        .wheel-num.used { opacity: 0.28; pointer-events: none; }
-        .wheel-num:not(.used):active {
-            background: var(--accent);
-            color: var(--accent-text);
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent);
-        }
-        .carousel-box {
-            width: min(340px, 90vw);
-            background: var(--panel);
-            border-radius: 20px;
-            padding: 18px 12px 22px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-            text-align: center;
-        }
-        .carousel-title {
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0.7;
-            margin-bottom: 12px;
-        }
-        .carousel-track {
-            display: flex;
-            gap: 10px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 10px 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
             overflow-x: auto;
-            scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
-            padding: 8px 16px 12px;
+            scroll-snap-type: x mandatory;
             scrollbar-width: none;
-            justify-content: center;
-            flex-wrap: wrap;
         }
-        .carousel-track::-webkit-scrollbar { display: none; }
-        .carousel-num {
-            width: 52px;
-            height: 52px;
+        .nums-bar::-webkit-scrollbar { display: none; }
+
+        .nbtn {
+            width: 46px;
+            height: 46px;
+            min-width: 46px;
             border-radius: 50%;
             background: var(--muted);
             border: 2px solid var(--border);
             color: var(--text);
-            font-size: calc(22px * var(--fs));
+            font-size: calc(20px * var(--fs));
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -273,26 +246,80 @@
             cursor: pointer;
             flex-shrink: 0;
             scroll-snap-align: center;
-            transition: transform 0.12s, background 0.15s;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
-        .carousel-num:active { transform: scale(0.9); }
-        .carousel-num.used { opacity: 0.28; pointer-events: none; }
-        .carousel-num:not(.used):active {
+        .nbtn:active { transform: scale(0.9); }
+        .nbtn.used {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .nbtn:not(.used):active {
             background: var(--accent);
             color: var(--accent-text);
             border-color: var(--accent);
         }
-        .picker-cancel {
-            margin-top: 14px;
+
+        .nums-cancel {
+            width: 46px;
+            height: 46px;
+            min-width: 46px;
+            border-radius: 50%;
             background: transparent;
-            border: none;
-            color: var(--accent);
-            font-size: 16px;
-            font-weight: 600;
-            padding: 10px 20px;
+            border: 2px solid var(--border);
+            color: var(--text);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            flex-shrink: 0;
+            opacity: 0.7;
         }
+
+        /* Kreis-Rad klein, unten – optional */
+        .mini-wheel-wrap {
+            display: none;
+            justify-content: center;
+            width: 100%;
+            padding: 4px 0;
+        }
+        .mini-wheel-wrap.show { display: flex; }
+        .mini-wheel {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+        }
+        .mini-wheel .nbtn {
+            position: absolute;
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            font-size: 18px;
+        }
+        .mini-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--muted);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        /* Settings */
         .overlay {
             position: fixed;
             inset: 0;
@@ -438,6 +465,7 @@
         }
         .action-btn.active { background: #ff9500; }
         .action-btn:active { opacity: 0.9; transform: scale(0.98); }
+
         .dialog-overlay {
             position: fixed;
             inset: 0;
@@ -463,17 +491,22 @@
         .dialog p { font-size: 14px; opacity: 0.8; margin-bottom: 18px; line-height: 1.4; }
         .dialog-btns { display: flex; gap: 10px; }
         .dialog-btns .action-btn { flex: 1; height: 44px; font-size: 14px; margin: 0; }
-        @media (orientation: landscape) and (max-height: 480px) {
+
+        /* Landscape: mehr Platz, Zahlen rechts möglich */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body { padding: calc(4px + var(--safe-t)) calc(8px + var(--safe-r)) calc(4px + var(--safe-b)) calc(8px + var(--safe-l)); }
             .title { font-size: 13px; }
-            .msg { min-height: 14px; font-size: 11px; }
-            .grid { width: min(100%, calc(100dvh - 70px)); }
+            .msg { min-height: 14px; font-size: 11px; margin-bottom: 2px; }
+            .grid { width: min(100%, calc(100dvh - 90px)); }
             .cell { font-size: 15px; }
-            .wheel { width: min(240px, 50vh); height: min(240px, 50vh); }
-            .wheel-num { width: 40px; height: 40px; font-size: 16px; }
-            .wheel-center { width: 48px; height: 48px; font-size: 14px; }
+            .nbtn { width: 38px; height: 38px; min-width: 38px; font-size: 16px; }
+            .side-nums .nbtn { width: 36px; height: 36px; }
+            .bottom-nums { padding: 2px 0; }
+            .nums-bar { padding: 6px; }
         }
         @media (min-width: 400px) {
-            .cell { font-size: calc(24px * var(--fs)); }
+            .cell { font-size: calc(23px * var(--fs)); }
+            .nbtn { width: 48px; height: 48px; min-width: 48px; }
         }
     </style>
 </head>
@@ -483,21 +516,28 @@
         <button class="gear" id="gear" title="Einstellungen">⚙️</button>
     </div>
     <div class="msg" id="msg"></div>
-    <div class="board-area">
-        <div class="grid" id="grid"></div>
+
+    <div class="main">
+        <div class="board-row">
+            <div class="grid" id="grid"></div>
+            <!-- Rechte Zahlenleiste (optional) -->
+            <div class="side-nums" id="side-nums"></div>
+        </div>
+
+        <!-- Untere horizontale Leiste -->
+        <div class="bottom-nums" id="bottom-nums">
+            <div class="nums-bar" id="nums-bar"></div>
+        </div>
+
+        <!-- Mini Kreis-Rad unten -->
+        <div class="mini-wheel-wrap" id="mini-wheel-wrap">
+            <div class="mini-wheel" id="mini-wheel">
+                <div class="mini-center" id="mini-cancel">✕</div>
+            </div>
+        </div>
     </div>
 
-    <div class="picker-overlay" id="picker">
-        <div class="wheel" id="wheel-view" style="display:none">
-            <div class="wheel-center" id="wheel-cancel">✕</div>
-        </div>
-        <div class="carousel-box" id="carousel-view" style="display:none">
-            <div class="carousel-title" id="carousel-title">Zahl wählen</div>
-            <div class="carousel-track" id="carousel-track"></div>
-            <button class="picker-cancel" id="carousel-cancel">Abbrechen</button>
-        </div>
-    </div>
-
+    <!-- Settings -->
     <div class="overlay" id="settings">
         <div class="panel">
             <div class="panel-head">
@@ -508,6 +548,7 @@
             <button class="action-btn secondary" id="btn-check" data-i18n="check" style="margin-top:8px">Prüfen</button>
             <button class="action-btn secondary" id="btn-correct" data-i18n="correct" style="margin-top:8px">Korrigieren</button>
             <div style="height:12px"></div>
+
             <div class="row">
                 <span class="row-label" data-i18n="language">Sprache</span>
                 <div class="row-ctrl chip-group" id="lang-chips">
@@ -515,13 +556,16 @@
                     <button class="chip" data-lang="ru">Русский</button>
                 </div>
             </div>
+
             <div class="row">
-                <span class="row-label" data-i18n="picker">Zahlen-Auswahl</span>
+                <span class="row-label" data-i18n="picker">Zahlen-Position</span>
                 <div class="row-ctrl chip-group" id="picker-chips">
-                    <button class="chip on" data-picker="wheel" data-i18n="wheel">Kreis-Rad</button>
-                    <button class="chip" data-picker="carousel" data-i18n="carousel">Karussell</button>
+                    <button class="chip on" data-picker="bottom" data-i18n="pos_bottom">Unten</button>
+                    <button class="chip" data-picker="side" data-i18n="pos_side">Rechts</button>
+                    <button class="chip" data-picker="wheel" data-i18n="pos_wheel">Kreis</button>
                 </div>
             </div>
+
             <div class="row">
                 <span class="row-label" data-i18n="difficulty">Schwierigkeit</span>
                 <div class="row-ctrl">
@@ -579,7 +623,7 @@
                 </div>
             </div>
             <div class="row">
-                <span class="row-label" style="font-size:12px;opacity:0.6" data-i18n="hint">Tippe leere Zelle → Zahlen erscheinen. Alles im Zahnrad ⚙️</span>
+                <span class="row-label" style="font-size:12px;opacity:0.6" data-i18n="hint">Leere Zelle tippen → Zahlen erscheinen. Spielfeld bleibt sichtbar.</span>
             </div>
         </div>
     </div>
@@ -599,19 +643,19 @@
 const I18N = {
     de: {
         app_title:'Erweitertes Sudoku', settings:'Einstellungen', done:'Fertig',
-        language:'Sprache', picker:'Zahlen-Auswahl', wheel:'Kreis-Rad', carousel:'Karussell',
+        language:'Sprache', picker:'Zahlen-Position',
+        pos_bottom:'Unten', pos_side:'Rechts', pos_wheel:'Kreis',
         difficulty:'Schwierigkeit', easy:'Leicht', normal:'Normal',
         instant:'Sofort prüfen', dark:'Dark Mode', fontsize:'Schriftgröße', btncolor:'Akzent-Farbe',
         background:'Hintergrund', fullscreen:'Vollbild', fs_toggle:'Aktivieren', fs_exit:'Beenden',
-        hint:'Tippe leere Zelle → Zahlen erscheinen. Alles im Zahnrad ⚙️',
+        hint:'Leere Zelle tippen → Zahlen erscheinen. Spielfeld bleibt sichtbar.',
         new:'Neues Spiel', check:'Prüfen', correct:'Korrigieren',
         new_title:'Neues Spiel?', new_msg:'Weiterspielen oder neues Rätsel starten?',
         continue:'Weiterspielen', start_new:'Neu starten',
-        pick_title:'Zahl wählen', cancel:'Abbrechen',
         msg_new:'Neues Spiel!', msg_diff:'Schwierigkeit:',
         msg_instant_on:'Sofort-Prüfung an', msg_instant_off:'Sofort-Prüfung aus',
         msg_dark_on:'Dark Mode an', msg_dark_off:'Dark Mode aus',
-        msg_used:'Zahl schon 9× verwendet!', msg_pick:'Zelle gewählt – Zahl tippen',
+        msg_used:'Zahl schon 9× verwendet!', msg_pick:'Zahl wählen – Feld bleibt sichtbar',
         msg_conflict:'Passt hier nicht!', msg_empty:'Noch {n} Zellen leer',
         msg_wrong:'Noch {n} Fehler', msg_solved:'Gelöst! 🎉',
         msg_deleted:'{n} Fehler gelöscht – tippe markierte Zellen',
@@ -619,27 +663,27 @@ const I18N = {
     },
     ru: {
         app_title:'Расширенное Судоку', settings:'Настройки', done:'Готово',
-        language:'Язык', picker:'Выбор цифр', wheel:'Круг', carousel:'Карусель',
+        language:'Язык', picker:'Позиция цифр',
+        pos_bottom:'Внизу', pos_side:'Справа', pos_wheel:'Круг',
         difficulty:'Сложность', easy:'Лёгкий', normal:'Обычный',
         instant:'Мгновенная проверка', dark:'Тёмный режим', fontsize:'Размер шрифта', btncolor:'Цвет акцента',
         background:'Фон', fullscreen:'Полный экран', fs_toggle:'Включить', fs_exit:'Выйти',
-        hint:'Нажмите пустую клетку → появятся цифры. Всё в шестерёнке ⚙️',
+        hint:'Нажмите пустую клетку → цифры появятся. Поле видно.',
         new:'Новая игра', check:'Проверить', correct:'Исправить',
         new_title:'Новая игра?', new_msg:'Продолжить или начать новое?',
         continue:'Продолжить', start_new:'Начать новую',
-        pick_title:'Выберите цифру', cancel:'Отмена',
         msg_new:'Новая игра!', msg_diff:'Сложность:',
         msg_instant_on:'Мгновенная проверка вкл.', msg_instant_off:'Мгновенная проверка выкл.',
         msg_dark_on:'Тёмный режим вкл.', msg_dark_off:'Тёмный режим выкл.',
-        msg_used:'Цифра уже использована 9 раз!', msg_pick:'Клетка выбрана – выберите цифру',
+        msg_used:'Цифра уже использована 9 раз!', msg_pick:'Выберите цифру – поле видно',
         msg_conflict:'Сюда не подходит!', msg_empty:'Ещё {n} пустых клеток',
         msg_wrong:'Ещё {n} ошибок', msg_solved:'Решено! 🎉',
         msg_deleted:'Удалено {n} ошибок – нажмите выделенные',
         msg_no_wrong:'Ошибок нет', msg_saved:'Игра загружена'
     }
 };
-let lang = 'de';
-function t(k){ return (I18N[lang]&&I18N[lang][k])||I18N.de[k]||k; }
+let lang='de';
+function t(k){return (I18N[lang]&&I18N[lang][k])||I18N.de[k]||k;}
 function applyI18n(){
     document.querySelectorAll('[data-i18n]').forEach(el=>{
         const k=el.getAttribute('data-i18n');
@@ -650,8 +694,6 @@ function applyI18n(){
     updateDiffLabel(); updateFontLabel();
     const fsBtn=document.getElementById('fs-btn');
     fsBtn.textContent=document.fullscreenElement?t('fs_exit'):t('fs_toggle');
-    document.getElementById('carousel-title').textContent=t('pick_title');
-    document.getElementById('carousel-cancel').textContent=t('cancel');
 }
 
 class Sudoku {
@@ -706,14 +748,16 @@ class Sudoku {
 }
 
 let game=null, selectedR=-1, selectedC=-1, isCorrectMode=false;
-let instantCheck=false, darkMode=false, fontScale=1, pickerMode='wheel', accent='#007aff', bgStyle='solid';
+let instantCheck=false, darkMode=false, fontScale=1, pickerMode='bottom', accent='#007aff', bgStyle='solid';
 const $=id=>document.getElementById(id);
-const gridEl=$('grid'), pickerEl=$('picker'), wheelView=$('wheel-view'), carouselView=$('carousel-view'), msgEl=$('msg');
+const gridEl=$('grid'), msgEl=$('msg');
+const bottomNums=$('bottom-nums'), sideNums=$('side-nums'), miniWheelWrap=$('mini-wheel-wrap');
+const numsBar=$('nums-bar'), miniWheel=$('mini-wheel');
 
-function savePrefs(){ try{ localStorage.setItem('sudokuV3prefs',JSON.stringify({lang,darkMode,instantCheck,fontScale,pickerMode,accent,bgStyle,difficulty:game?game.difficulty:'easy'})); }catch(e){} }
-function saveGame(){ if(!game) return; try{ localStorage.setItem('sudokuV3game',JSON.stringify(game.toJSON())); }catch(e){} }
-function loadPrefs(){ try{ const p=JSON.parse(localStorage.getItem('sudokuV3prefs')||'{}'); if(p.lang) lang=p.lang; if(p.darkMode!=null) darkMode=p.darkMode; if(p.instantCheck!=null) instantCheck=p.instantCheck; if(p.fontScale) fontScale=p.fontScale; if(p.pickerMode) pickerMode=p.pickerMode; if(p.accent) accent=p.accent; if(p.bgStyle) bgStyle=p.bgStyle; return p.difficulty||'easy'; }catch(e){ return 'easy'; } }
-function loadGame(){ try{ const raw=localStorage.getItem('sudokuV3game'); if(!raw) return null; return Sudoku.fromJSON(JSON.parse(raw)); }catch(e){ return null; } }
+function savePrefs(){ try{ localStorage.setItem('sudokuV4prefs',JSON.stringify({lang,darkMode,instantCheck,fontScale,pickerMode,accent,bgStyle,difficulty:game?game.difficulty:'easy'})); }catch(e){} }
+function saveGame(){ if(!game) return; try{ localStorage.setItem('sudokuV4game',JSON.stringify(game.toJSON())); }catch(e){} }
+function loadPrefs(){ try{ const p=JSON.parse(localStorage.getItem('sudokuV4prefs')||'{}'); if(p.lang) lang=p.lang; if(p.darkMode!=null) darkMode=p.darkMode; if(p.instantCheck!=null) instantCheck=p.instantCheck; if(p.fontScale) fontScale=p.fontScale; if(p.pickerMode) pickerMode=p.pickerMode; if(p.accent) accent=p.accent; if(p.bgStyle) bgStyle=p.bgStyle; return p.difficulty||'easy'; }catch(e){ return 'easy'; } }
+function loadGame(){ try{ const raw=localStorage.getItem('sudokuV4game'); if(!raw) return null; return Sudoku.fromJSON(JSON.parse(raw)); }catch(e){ return null; } }
 
 function showMsg(txt,ms=2200){ msgEl.textContent=txt; clearTimeout(msgEl._t); msgEl._t=setTimeout(()=>{ if(!game||!game.isComplete()) msgEl.textContent=''; },ms); }
 function updateDiffLabel(){ $('diff-label').textContent=$('diff-toggle').checked?t('normal'):t('easy'); }
@@ -724,6 +768,66 @@ function applyBg(){
     if(bgStyle==='darksolid'){ document.body.style.backgroundColor='#0d0d12'; document.body.style.backgroundImage='none'; }
     else if(bgStyle==='solid'||!map[bgStyle]){ document.body.style.backgroundColor=''; document.body.style.backgroundImage='none'; }
     else { document.body.style.backgroundImage=map[bgStyle]; document.body.style.backgroundColor='transparent'; }
+}
+
+function makeNumBtn(n, extraClass){
+    const b=document.createElement('div');
+    b.className='nbtn'+(extraClass?' '+extraClass:'');
+    b.textContent=n;
+    b.dataset.n=n;
+    if(game&&game.used[n-1]>=9) b.classList.add('used');
+    b.addEventListener('click',()=>pickNumber(n));
+    return b;
+}
+
+function hideAllPickers(){
+    bottomNums.classList.remove('show');
+    sideNums.classList.remove('show');
+    miniWheelWrap.classList.remove('show');
+}
+
+function showPicker(){
+    hideAllPickers();
+    if(pickerMode==='bottom'){
+        numsBar.innerHTML='';
+        const cancel=document.createElement('div');
+        cancel.className='nums-cancel';
+        cancel.textContent='✕';
+        cancel.addEventListener('click',closePicker);
+        numsBar.appendChild(cancel);
+        for(let n=1;n<=9;n++) numsBar.appendChild(makeNumBtn(n));
+        bottomNums.classList.add('show');
+    } else if(pickerMode==='side'){
+        sideNums.innerHTML='';
+        for(let n=1;n<=9;n++) sideNums.appendChild(makeNumBtn(n));
+        const cancel=document.createElement('div');
+        cancel.className='nbtn';
+        cancel.textContent='✕';
+        cancel.style.opacity='0.6';
+        cancel.addEventListener('click',closePicker);
+        sideNums.appendChild(cancel);
+        sideNums.classList.add('show');
+    } else {
+        // wheel
+        miniWheel.querySelectorAll('.nbtn').forEach(el=>el.remove());
+        const size=220, radius=size*0.34, cx=size/2, cy=size/2;
+        for(let n=1;n<=9;n++){
+            const angle=(n-1)*40-90, rad=angle*Math.PI/180;
+            const x=cx+radius*Math.cos(rad)-21, y=cy+radius*Math.sin(rad)-21;
+            const btn=makeNumBtn(n);
+            btn.style.left=x+'px';
+            btn.style.top=y+'px';
+            miniWheel.appendChild(btn);
+        }
+        miniWheelWrap.classList.add('show');
+    }
+    showMsg(t('msg_pick'),2500);
+}
+
+function closePicker(){
+    hideAllPickers();
+    document.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
+    selectedR=selectedC=-1;
 }
 
 function renderGrid(){
@@ -752,51 +856,16 @@ function onCell(r,c,cell){
     if(cell.textContent){
         const old=parseInt(cell.textContent);
         cell.textContent=''; game.grid[r][c]=0; game.used[old-1]--;
-        cell.classList.remove('valid','correct','incorrect'); saveGame(); return;
+        cell.classList.remove('valid','correct','incorrect'); saveGame();
+        closePicker();
+        return;
     }
     selectedR=r; selectedC=c;
     document.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
     cell.classList.add('sel');
-    openPicker();
+    showPicker();
 }
 
-function openPicker(){
-    pickerEl.classList.add('open');
-    if(pickerMode==='wheel'){ wheelView.style.display='flex'; carouselView.style.display='none'; buildWheel(); }
-    else { wheelView.style.display='none'; carouselView.style.display='block'; buildCarousel(); }
-    showMsg(t('msg_pick'),3000);
-}
-function closePicker(){
-    pickerEl.classList.remove('open');
-    document.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
-    selectedR=selectedC=-1;
-}
-function buildWheel(){
-    wheelView.querySelectorAll('.wheel-num').forEach(el=>el.remove());
-    const size=Math.min(300,window.innerWidth*0.78);
-    const radius=size*0.36, cx=size/2, cy=size/2;
-    wheelView.style.width=size+'px'; wheelView.style.height=size+'px';
-    for(let n=1;n<=9;n++){
-        const angle=(n-1)*40-90, rad=angle*Math.PI/180;
-        const x=cx+radius*Math.cos(rad)-26, y=cy+radius*Math.sin(rad)-26;
-        const btn=document.createElement('div');
-        btn.className='wheel-num'; btn.textContent=n;
-        btn.style.left=x+'px'; btn.style.top=y+'px';
-        if(game.used[n-1]>=9) btn.classList.add('used');
-        btn.addEventListener('click',()=>pickNumber(n));
-        wheelView.appendChild(btn);
-    }
-}
-function buildCarousel(){
-    const track=$('carousel-track'); track.innerHTML='';
-    for(let n=1;n<=9;n++){
-        const btn=document.createElement('div');
-        btn.className='carousel-num'; btn.textContent=n;
-        if(game.used[n-1]>=9) btn.classList.add('used');
-        btn.addEventListener('click',()=>pickNumber(n));
-        track.appendChild(btn);
-    }
-}
 function pickNumber(n){
     if(selectedR<0||selectedC<0) return;
     if(game.used[n-1]>=9){ showMsg(t('msg_used')); return; }
@@ -814,19 +883,18 @@ function pickNumber(n){
     closePicker(); saveGame();
     if(game.isComplete()) celebrate();
 }
-$('wheel-cancel').addEventListener('click',closePicker);
-$('carousel-cancel').addEventListener('click',closePicker);
-pickerEl.addEventListener('click',e=>{ if(e.target===pickerEl) closePicker(); });
+
+$('mini-cancel').addEventListener('click',closePicker);
 
 function celebrate(){
     showMsg(t('msg_solved'),5000);
     document.querySelectorAll('.cell').forEach((cell,i)=>{ setTimeout(()=>{ cell.classList.add('sel'); setTimeout(()=>cell.classList.remove('sel'),600); },i*6); });
-    try{ localStorage.removeItem('sudokuV3game'); }catch(e){}
+    try{ localStorage.removeItem('sudokuV4game'); }catch(e){}
 }
 function startNew(diff){
     game=new Sudoku(diff||($('diff-toggle').checked?'normal':'easy'));
     isCorrectMode=false; $('btn-correct').classList.remove('active');
-    selectedR=selectedC=-1; renderGrid(); saveGame(); showMsg(t('msg_new'));
+    selectedR=selectedC=-1; closePicker(); renderGrid(); saveGame(); showMsg(t('msg_new'));
 }
 
 $('btn-new').addEventListener('click',()=>{
@@ -838,7 +906,7 @@ $('dlg-continue').addEventListener('click',()=>$('new-dialog').classList.remove(
 $('dlg-new').addEventListener('click',()=>{ $('new-dialog').classList.remove('open'); startNew(); });
 
 $('btn-check').addEventListener('click',()=>{
-    isCorrectMode=false; $('btn-correct').classList.remove('active'); $('settings').classList.remove('open');
+    isCorrectMode=false; $('btn-correct').classList.remove('active'); $('settings').classList.remove('open'); closePicker();
     let empty=0,wrong=0;
     for(let r=0;r<9;r++) for(let c=0;c<9;c++){
         const cell=gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
@@ -852,7 +920,7 @@ $('btn-check').addEventListener('click',()=>{
 });
 
 $('btn-correct').addEventListener('click',()=>{
-    isCorrectMode=!isCorrectMode; $('btn-correct').classList.toggle('active',isCorrectMode); $('settings').classList.remove('open');
+    isCorrectMode=!isCorrectMode; $('btn-correct').classList.toggle('active',isCorrectMode); $('settings').classList.remove('open'); closePicker();
     if(isCorrectMode){
         let del=0;
         for(let r=0;r<9;r++) for(let c=0;c<9;c++){
@@ -885,7 +953,12 @@ document.querySelectorAll('#lang-chips .chip').forEach(chip=>{
     chip.addEventListener('click',()=>{ lang=chip.dataset.lang; document.querySelectorAll('#lang-chips .chip').forEach(c=>c.classList.toggle('on',c===chip)); applyI18n(); savePrefs(); });
 });
 document.querySelectorAll('#picker-chips .chip').forEach(chip=>{
-    chip.addEventListener('click',()=>{ pickerMode=chip.dataset.picker; document.querySelectorAll('#picker-chips .chip').forEach(c=>c.classList.toggle('on',c===chip)); savePrefs(); });
+    chip.addEventListener('click',()=>{
+        pickerMode=chip.dataset.picker;
+        document.querySelectorAll('#picker-chips .chip').forEach(c=>c.classList.toggle('on',c===chip));
+        savePrefs();
+        if(selectedR>=0) showPicker();
+    });
 });
 $('diff-toggle').addEventListener('change',function(){ updateDiffLabel(); savePrefs(); showMsg(t('msg_diff')+' '+(this.checked?t('normal'):t('easy'))); });
 $('instant-toggle').addEventListener('change',function(){ instantCheck=this.checked; savePrefs(); showMsg(this.checked?t('msg_instant_on'):t('msg_instant_off')); });
