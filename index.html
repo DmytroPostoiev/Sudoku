@@ -34,7 +34,7 @@
             --fs: 1;
             --pad: 12px;
             --picker-h: 78px;
-            --side-w: 52px;
+            --side-w: 56px;
             --carousel-item: 52px;
         }
         .dark {
@@ -251,26 +251,82 @@
 
         /* ===== IMMER SICHTBARE PICKER ===== */
 
-        /* Rechte Seitenleiste – immer sichtbar bei mode-side */
+        /* Rechte vertikale Karussell-Leiste – immer sichtbar bei mode-side */
         .side-nums {
             position: absolute;
             right: 0;
             top: 50%;
             transform: translateY(-50%);
             display: none;
-            flex-direction: column;
-            gap: 4px;
-            justify-content: center;
             z-index: 10;
+            width: 50px;
+            height: min(320px, 70%);
+            max-height: 360px;
         }
         body.mode-side .side-nums {
-            display: flex;
+            display: block;
         }
-        .side-nums .nbtn {
-            width: 42px;
-            height: 42px;
-            min-width: 42px;
-            font-size: 18px;
+        .side-carousel-outer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border-radius: 14px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+        }
+        .side-center-mark {
+            position: absolute;
+            left: 3px;
+            right: 3px;
+            top: 50%;
+            height: 44px;
+            margin-top: -22px;
+            border-radius: 10px;
+            border: 2.5px solid var(--accent);
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            pointer-events: none;
+            z-index: 2;
+        }
+        .side-track {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            padding: calc(50% - 22px) 0;
+            gap: 0;
+        }
+        .side-track::-webkit-scrollbar { display: none; }
+        .side-item {
+            flex: 0 0 44px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(20px * var(--fs));
+            font-weight: 700;
+            color: var(--text);
+            opacity: 0.4;
+            scroll-snap-align: center;
+            transition: opacity 0.15s, transform 0.15s, color 0.15s;
+            cursor: pointer;
+        }
+        .side-item.center {
+            opacity: 1;
+            color: var(--accent);
+            transform: scale(1.2);
+            font-weight: 800;
+        }
+        .side-item.used {
+            opacity: 0.18;
+            text-decoration: line-through;
         }
 
         /* Untere Karussell-Leiste – immer sichtbar bei mode-bottom */
@@ -389,52 +445,85 @@
             pointer-events: none;
         }
 
-        /* Kreis-Rad – immer sichtbar bei mode-wheel */
+        /* Kreis-Rad – immer sichtbar bei mode-wheel, Mitte zeigt gewählte Zahl */
         .mini-wheel-wrap {
             display: none;
             justify-content: center;
             width: 100%;
             padding: 4px 0 2px;
             flex-shrink: 0;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
         }
         body.mode-wheel .mini-wheel-wrap {
             display: flex;
         }
         .mini-wheel {
             position: relative;
-            width: 210px;
-            height: 210px;
+            width: 220px;
+            height: 220px;
             border-radius: 50%;
             background: var(--panel);
             border: 1px solid var(--border);
             box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+            touch-action: none;
         }
-        .mini-wheel .nbtn {
+        .mini-wheel .witem {
             position: absolute;
             width: 40px;
             height: 40px;
-            min-width: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 17px;
+            font-weight: 700;
+            color: var(--text);
+            opacity: 0.45;
+            transition: opacity 0.15s, transform 0.15s, background 0.15s, color 0.15s;
+            cursor: pointer;
+            background: var(--muted);
+            border: 2px solid var(--border);
+        }
+        .mini-wheel .witem.active {
+            opacity: 1;
+            color: var(--accent-text);
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: scale(1.12);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+        .mini-wheel .witem.used {
+            opacity: 0.2;
+            text-decoration: line-through;
         }
         .mini-center {
             position: absolute;
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
-            width: 46px;
-            height: 46px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
-            background: var(--muted);
-            border: 1px solid var(--border);
+            background: color-mix(in srgb, var(--accent) 15%, var(--panel));
+            border: 2.5px solid var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 15px;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--accent);
             cursor: pointer;
-            opacity: 0.8;
-            transition: transform 0.15s, opacity 0.15s;
+            transition: transform 0.12s, background 0.15s;
+            z-index: 3;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
         }
-        .mini-center:active { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
+        .mini-center:active { transform: translate(-50%, -50%) scale(0.92); }
+        .wheel-actions {
+            display: flex;
+            gap: 12px;
+        }
 
         /* Gemeinsame Nummern-Buttons (Side + Wheel) */
         .nbtn {
@@ -669,7 +758,9 @@
             body.mode-wheel .grid { width: min(100%, calc(100dvh - 200px)); }
             .cell { font-size: 15px; }
             .nbtn { width: 36px; height: 36px; min-width: 36px; font-size: 15px; }
-            .side-nums .nbtn { width: 32px; height: 32px; min-width: 32px; }
+            .side-nums { width: 42px; height: min(240px, 75%); }
+            .side-item { flex: 0 0 36px; width: 36px; height: 36px; font-size: 16px; }
+            .side-center-mark { height: 36px; margin-top: -18px; }
             .carousel-outer { height: 48px; }
             .carousel-item { height: 40px; font-size: 18px; }
             .mini-wheel { width: 160px; height: 160px; }
@@ -693,7 +784,12 @@
     <div class="main">
         <div class="board-row" id="board-row">
             <div class="grid" id="grid"></div>
-            <div class="side-nums" id="side-nums"></div>
+            <div class="side-nums" id="side-nums">
+                <div class="side-carousel-outer">
+                    <div class="side-center-mark"></div>
+                    <div class="side-track" id="side-track"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Endloses Karussell (mode-bottom) – immer sichtbar -->
@@ -708,10 +804,14 @@
             </div>
         </div>
 
-        <!-- Kreis-Rad (mode-wheel) – immer sichtbar -->
+        <!-- Kreis-Rad (mode-wheel) – Mitte zeigt gewählte Zahl -->
         <div class="mini-wheel-wrap" id="mini-wheel-wrap">
             <div class="mini-wheel" id="mini-wheel">
-                <div class="mini-center" id="mini-cancel" title="Auswahl aufheben">✕</div>
+                <div class="mini-center" id="wheel-center">5</div>
+            </div>
+            <div class="wheel-actions">
+                <button class="carousel-btn" id="btn-clear-wheel" disabled aria-label="Clear">✕</button>
+                <button class="carousel-btn primary" id="btn-place-wheel" disabled aria-label="Place">✓</button>
             </div>
         </div>
     </div>
@@ -965,6 +1065,7 @@ function applyPickerMode(){
     document.body.classList.remove('mode-bottom','mode-side','mode-wheel');
     document.body.classList.add('mode-'+pickerMode);
     buildSideNums();
+    initSideScroll();
     buildWheel();
     updateCarouselUsed();
     updateActionButtons();
@@ -981,21 +1082,210 @@ function makeNumBtn(n){
     return b;
 }
 
+/* ===== RECHTS: vertikales Endlos-Karussell ===== */
+let sideCenterNum=5;
+let sideScrollTimer=null;
+let sideUserScrolling=false;
+
 function buildSideNums(){
-    sideNums.innerHTML='';
-    for(let n=1;n<=9;n++) sideNums.appendChild(makeNumBtn(n));
+    const track=$('side-track');
+    if(!track) return;
+    track.innerHTML='';
+    const REPS=15;
+    for(let rep=0;rep<REPS;rep++){
+        for(let n=1;n<=9;n++){
+            const item=document.createElement('div');
+            item.className='side-item';
+            item.dataset.n=n;
+            item.textContent=n;
+            if(game&&game.used[n-1]>=9) item.classList.add('used');
+            item.addEventListener('click',()=>{
+                scrollSideToNum(n);
+                if(selectedR>=0) setTimeout(()=>pickNumber(n),160);
+            });
+            track.appendChild(item);
+        }
+    }
+    requestAnimationFrame(()=>{
+        const mid=Math.floor(REPS/2)*9+4;
+        const items=track.querySelectorAll('.side-item');
+        if(items[mid]){
+            items[mid].scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+            updateSideCenter();
+        }
+    });
 }
 
+function getSideCenterNum(){
+    const track=$('side-track');
+    if(!track) return sideCenterNum;
+    const rect=track.getBoundingClientRect();
+    const centerY=rect.top+rect.height/2;
+    let best=null, bestDist=Infinity;
+    track.querySelectorAll('.side-item').forEach(item=>{
+        const r=item.getBoundingClientRect();
+        const mid=r.top+r.height/2;
+        const d=Math.abs(mid-centerY);
+        if(d<bestDist){ bestDist=d; best=item; }
+    });
+    if(best){
+        track.querySelectorAll('.side-item.center').forEach(el=>el.classList.remove('center'));
+        best.classList.add('center');
+        return parseInt(best.dataset.n);
+    }
+    return sideCenterNum;
+}
+
+function updateSideCenter(){
+    sideCenterNum=getSideCenterNum();
+    updateActionButtons();
+}
+
+function scrollSideToNum(n){
+    const track=$('side-track');
+    if(!track) return;
+    const rect=track.getBoundingClientRect();
+    const centerY=rect.top+rect.height/2;
+    let best=null, bestDist=Infinity;
+    track.querySelectorAll('.side-item').forEach(item=>{
+        if(parseInt(item.dataset.n)!==n) return;
+        const r=item.getBoundingClientRect();
+        const mid=r.top+r.height/2;
+        const d=Math.abs(mid-centerY);
+        if(d<bestDist){ bestDist=d; best=item; }
+    });
+    if(best) best.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});
+}
+
+function initSideScroll(){
+    const track=$('side-track');
+    if(!track || track._inited) return;
+    track._inited=true;
+    track.addEventListener('touchstart',()=>{ sideUserScrolling=true; },{passive:true});
+    track.addEventListener('mousedown',()=>{ sideUserScrolling=true; });
+    track.addEventListener('scroll',()=>{
+        clearTimeout(sideScrollTimer);
+        sideScrollTimer=setTimeout(()=>{
+            updateSideCenter();
+            const rect=track.getBoundingClientRect();
+            const centerY=rect.top+rect.height/2;
+            let best=null, bestDist=Infinity;
+            track.querySelectorAll('.side-item').forEach(item=>{
+                const r=item.getBoundingClientRect();
+                const mid=r.top+r.height/2;
+                const d=Math.abs(mid-centerY);
+                if(d<bestDist){ bestDist=d; best=item; }
+            });
+            if(best && bestDist>2){
+                best.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});
+                setTimeout(updateSideCenter,120);
+            } else {
+                updateSideCenter();
+                if(sideUserScrolling && selectedR>=0 && selectedC>=0){
+                    sideUserScrolling=false;
+                    const n=sideCenterNum;
+                    if(n>=1&&n<=9) pickNumber(n);
+                }
+            }
+        },100);
+    },{passive:true});
+}
+
+/* ===== KREIS: drehbar, Mitte zeigt gewählte Zahl ===== */
+let wheelSelected=5;
+let wheelAngle=0; // degrees, for visual rotation offset of ring
+
 function buildWheel(){
-    miniWheel.querySelectorAll('.nbtn').forEach(el=>el.remove());
-    const size=210, radius=size*0.34, cx=size/2, cy=size/2;
+    const wheel=$('mini-wheel');
+    if(!wheel) return;
+    wheel.querySelectorAll('.witem').forEach(el=>el.remove());
+    const size=220, radius=size*0.36, cx=size/2, cy=size/2;
     for(let n=1;n<=9;n++){
         const angle=(n-1)*40-90, rad=angle*Math.PI/180;
         const x=cx+radius*Math.cos(rad)-20, y=cy+radius*Math.sin(rad)-20;
-        const btn=makeNumBtn(n);
+        const btn=document.createElement('div');
+        btn.className='witem'+(n===wheelSelected?' active':'');
+        btn.textContent=n;
+        btn.dataset.n=n;
         btn.style.left=x+'px';
         btn.style.top=y+'px';
-        miniWheel.appendChild(btn);
+        if(game&&game.used[n-1]>=9) btn.classList.add('used');
+        btn.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            setWheelSelected(n);
+            if(selectedR>=0) pickNumber(n);
+        });
+        wheel.appendChild(btn);
+    }
+    updateWheelCenter();
+    initWheelDrag();
+}
+
+function setWheelSelected(n){
+    wheelSelected=n;
+    document.querySelectorAll('.mini-wheel .witem').forEach(el=>{
+        el.classList.toggle('active', parseInt(el.dataset.n)===n);
+    });
+    updateWheelCenter();
+    updateActionButtons();
+}
+
+function updateWheelCenter(){
+    const c=$('wheel-center');
+    if(c) c.textContent=wheelSelected;
+}
+
+function initWheelDrag(){
+    const wheel=$('mini-wheel');
+    if(!wheel || wheel._dragInited) return;
+    wheel._dragInited=true;
+    let startAngle=0, startSelected=5, dragging=false;
+
+    function getAngle(e){
+        const rect=wheel.getBoundingClientRect();
+        const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+        const t=e.touches?e.touches[0]:e;
+        return Math.atan2(t.clientY-cy, t.clientX-cx)*180/Math.PI;
+    }
+
+    function onStart(e){
+        // only drag on empty area / center, not on buttons for simple click
+        if(e.target.classList.contains('witem')) return;
+        dragging=true;
+        startAngle=getAngle(e);
+        startSelected=wheelSelected;
+        e.preventDefault();
+    }
+    function onMove(e){
+        if(!dragging) return;
+        const ang=getAngle(e);
+        let delta=ang-startAngle;
+        // map 40 deg per number
+        let steps=Math.round(delta/40);
+        let n=((startSelected-1+steps)%9+9)%9+1;
+        if(n!==wheelSelected) setWheelSelected(n);
+        e.preventDefault();
+    }
+    function onEnd(e){
+        if(!dragging) return;
+        dragging=false;
+        if(selectedR>=0 && selectedC>=0){
+            pickNumber(wheelSelected);
+        }
+    }
+    wheel.addEventListener('touchstart',onStart,{passive:false});
+    wheel.addEventListener('touchmove',onMove,{passive:false});
+    wheel.addEventListener('touchend',onEnd);
+    wheel.addEventListener('mousedown',onStart);
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onEnd);
+
+    // center tap = place
+    const wc=$('wheel-center');
+    if(wc){
+        wc.addEventListener('click',()=>{
+            if(selectedR>=0) pickNumber(wheelSelected);
+        });
     }
 }
 
@@ -1042,7 +1332,19 @@ function updateCarouselUsed(){
         const n=parseInt(item.dataset.n);
         item.classList.toggle('used', game.used[n-1]>=9);
     });
-    // Side + Wheel auch aktualisieren
+    const sideTrack=$('side-track');
+    if(sideTrack){
+        sideTrack.querySelectorAll('.side-item').forEach(item=>{
+            const n=parseInt(item.dataset.n);
+            item.classList.toggle('used', game.used[n-1]>=9);
+        });
+    }
+    document.querySelectorAll('.mini-wheel .witem').forEach(b=>{
+        const n=parseInt(b.dataset.n);
+        if(!n) return;
+        b.classList.toggle('used', game.used[n-1]>=9);
+        b.classList.toggle('active', n===wheelSelected);
+    });
     document.querySelectorAll('.nbtn').forEach(b=>{
         const n=parseInt(b.dataset.n);
         if(!n) return;
@@ -1147,8 +1449,12 @@ function highlightSame(n){
 function updateActionButtons(){
     const hasSel=selectedR>=0&&selectedC>=0;
     const cellHasVal=hasSel&&game&&game.grid[selectedR][selectedC]>0;
+    const canClear=!hasSel||!cellHasVal||(game&&game.isOrig(selectedR,selectedC));
     btnPlace.disabled=!hasSel;
-    btnClearCell.disabled=!hasSel||!cellHasVal||(game&&game.isOrig(selectedR,selectedC));
+    btnClearCell.disabled=canClear;
+    const bpw=$('btn-place-wheel'), bcw=$('btn-clear-wheel');
+    if(bpw) bpw.disabled=!hasSel;
+    if(bcw) bcw.disabled=canClear;
 }
 
 function deselect(){
@@ -1188,6 +1494,8 @@ function onCell(r,c,cell){
         if(v){
             highlightSame(v);
             if(pickerMode==='bottom') scrollCarouselToNum(v);
+            if(pickerMode==='side') scrollSideToNum(v);
+            if(pickerMode==='wheel') setWheelSelected(v);
         }
         return;
     }
@@ -1204,6 +1512,8 @@ function onCell(r,c,cell){
         cell.classList.add('sel');
         highlightSame(old);
         if(pickerMode==='bottom') scrollCarouselToNum(old);
+        if(pickerMode==='side') scrollSideToNum(old);
+        if(pickerMode==='wheel') setWheelSelected(old);
         updateActionButtons();
         showMsg(t('msg_pick'),2200);
         return;
@@ -1288,10 +1598,13 @@ btnClearCell.addEventListener('click',()=>{
     if(selectedR>=0) clearCell(selectedR,selectedC);
 });
 
-$('mini-cancel').addEventListener('click',()=>{
-    deselect();
-    clearSameHighlight();
-    showMsg(t('msg_select'),1800);
+const btnPlaceWheel=$('btn-place-wheel'), btnClearWheel=$('btn-clear-wheel');
+if(btnPlaceWheel) btnPlaceWheel.addEventListener('click',()=>{
+    if(selectedR<0) return;
+    pickNumber(wheelSelected);
+});
+if(btnClearWheel) btnClearWheel.addEventListener('click',()=>{
+    if(selectedR>=0) clearCell(selectedR,selectedC);
 });
 
 function celebrate(){
@@ -1418,7 +1731,11 @@ document.addEventListener('keydown',e=>{
         if(selectedR>=0) clearCell(selectedR,selectedC);
     }
     else if(e.key==='Enter'||e.key===' '){
-        if(selectedR>=0 && pickerMode==='bottom') pickNumber(carouselCenterNum);
+        if(selectedR>=0){
+            if(pickerMode==='bottom') pickNumber(carouselCenterNum);
+            else if(pickerMode==='side') pickNumber(sideCenterNum);
+            else if(pickerMode==='wheel') pickNumber(wheelSelected);
+        }
     }
 });
 
