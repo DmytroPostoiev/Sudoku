@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-title" content="Sudoku">
     <meta name="theme-color" content="#1a1a2e">
     <meta name="mobile-web-app-capable" content="yes">
-    <title></title>
+    <title>Sudoku</title>
     <style>
         :root {
             --bg: #f0f2f5;
@@ -33,8 +33,9 @@
             --safe-r: env(safe-area-inset-right, 0px);
             --fs: 1;
             --pad: 12px;
-            --picker-h: 72px;
-            --side-w: 56px;
+            --picker-h: 78px;
+            --side-w: 52px;
+            --carousel-item: 52px;
         }
         .dark {
             --bg: #0d0d12;
@@ -82,20 +83,17 @@
             touch-action: manipulation;
         }
 
-        /* Header */
         .header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
             width: 100%;
             max-width: 520px;
-            margin: 0 auto 6px;
+            margin: 0 auto 2px;
             flex-shrink: 0;
         }
         .title {
-            font-size: calc(16px * var(--fs));
-            font-weight: 650;
-            opacity: 0.88;
+            display: none;
         }
         .gear {
             width: 44px;
@@ -115,21 +113,24 @@
         .gear:active { transform: scale(0.92); }
 
         .msg {
-            min-height: 18px;
-            font-size: calc(13px * var(--fs));
+            min-height: 0;
+            height: 0;
+            overflow: hidden;
+            font-size: calc(12px * var(--fs));
             text-align: center;
             color: #34c759;
             font-weight: 550;
-            margin-bottom: 6px;
+            margin-bottom: 0;
             width: 100%;
             max-width: 520px;
             margin-left: auto;
             margin-right: auto;
             flex-shrink: 0;
-            transition: opacity 0.25s;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        /* Hauptbereich – Grid behält feste Größe */
+        /* Hauptbereich – Grid-Größe bleibt IMMER stabil */
         .main {
             flex: 1;
             display: flex;
@@ -141,7 +142,6 @@
             margin: 0 auto;
             min-height: 0;
             position: relative;
-            gap: 0;
         }
 
         .board-row {
@@ -152,19 +152,19 @@
             flex: 1;
             min-height: 0;
             position: relative;
+            /* Immer denselben Platz für Side-Picker reservieren wenn aktiv */
             padding-right: 0;
-            transition: padding-right 0.2s ease;
         }
-        .board-row.has-side {
-            padding-right: calc(var(--side-w) + 8px);
+        body.mode-side .board-row {
+            padding-right: calc(var(--side-w) + 6px);
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(9, 1fr);
             grid-template-rows: repeat(9, 1fr);
-            /* Feste Größe: unabhängig von sichtbaren Pickern */
-            width: min(100%, min(88vw, calc(72dvh - 40px)));
+            /* Feste Größe – berücksichtigt permanenten Picker-Platz */
+            width: min(100%, min(88vw, calc(100dvh - 220px)));
             aspect-ratio: 1;
             border: 2.5px solid var(--grid-box);
             border-radius: 6px;
@@ -173,6 +173,12 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.12);
             flex-shrink: 0;
             transition: box-shadow 0.3s, transform 0.25s;
+        }
+        body.mode-wheel .grid {
+            width: min(100%, min(88vw, calc(100dvh - 280px)));
+        }
+        body.mode-side .grid {
+            width: min(100%, min(calc(88vw - 60px), calc(100dvh - 160px)));
         }
         .grid.celebrate {
             animation: gridCelebrate 0.8s ease;
@@ -242,80 +248,195 @@
             40% { transform: scale(1.06); }
             100% { transform: scale(1); }
         }
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
 
-        /* Rechte Seitenleiste – absolut positioniert, Grid-Größe bleibt stabil */
+        /* ===== IMMER SICHTBARE PICKER ===== */
+
+        /* Rechte Seitenleiste – immer sichtbar bei mode-side */
         .side-nums {
             position: absolute;
             right: 0;
             top: 50%;
-            transform: translateY(-50%) translateX(12px);
+            transform: translateY(-50%);
             display: none;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
             justify-content: center;
-            padding: 4px 0;
             z-index: 10;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s, transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
         }
-        .side-nums.show {
+        body.mode-side .side-nums {
             display: flex;
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(-50%) translateX(0);
-            animation: fadeUp 0.25s ease;
         }
         .side-nums .nbtn {
             width: 42px;
             height: 42px;
             min-width: 42px;
+            font-size: 18px;
         }
 
-        /* Untere Zahlenleiste – absolut, Grid bleibt unverändert */
-        .bottom-nums {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
+        /* Untere Karussell-Leiste – immer sichtbar bei mode-bottom */
+        .carousel-wrap {
             display: none;
             width: 100%;
             max-width: 520px;
-            padding: 0 0 4px;
-            z-index: 10;
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(12px);
-            transition: opacity 0.2s, transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
+            flex-shrink: 0;
+            padding: 6px 0 2px;
+            position: relative;
         }
-        .bottom-nums.show {
+        body.mode-bottom .carousel-wrap {
             display: block;
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0);
         }
 
-        .nums-bar {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .carousel-outer {
+            position: relative;
+            height: 58px;
+            overflow: hidden;
+            border-radius: 14px;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 10px 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+        }
+
+        /* Feste Mittel-Markierung */
+        .carousel-center-mark {
+            position: absolute;
+            left: 50%;
+            top: 4px;
+            bottom: 4px;
+            width: var(--carousel-item);
+            margin-left: calc(var(--carousel-item) / -2);
+            border-radius: 12px;
+            border: 2.5px solid var(--accent);
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            pointer-events: none;
+            z-index: 2;
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+        }
+
+        .carousel-track {
+            display: flex;
+            align-items: center;
+            height: 100%;
             overflow-x: auto;
+            overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
             scroll-snap-type: x mandatory;
             scrollbar-width: none;
-            animation: fadeUp 0.25s ease;
+            padding: 0 calc(50% - var(--carousel-item) / 2);
+            gap: 0;
+            scroll-behavior: smooth;
         }
-        .nums-bar::-webkit-scrollbar { display: none; }
+        .carousel-track::-webkit-scrollbar { display: none; }
 
+        .carousel-item {
+            flex: 0 0 var(--carousel-item);
+            width: var(--carousel-item);
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(22px * var(--fs));
+            font-weight: 700;
+            color: var(--text);
+            opacity: 0.45;
+            scroll-snap-align: center;
+            transition: opacity 0.15s, transform 0.15s, color 0.15s;
+            cursor: pointer;
+        }
+        .carousel-item.center {
+            opacity: 1;
+            color: var(--accent);
+            transform: scale(1.15);
+            font-weight: 800;
+        }
+        .carousel-item.used {
+            opacity: 0.2;
+            text-decoration: line-through;
+        }
+        .carousel-item:active {
+            transform: scale(0.95);
+        }
+
+        .carousel-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .carousel-btn {
+            height: 40px;
+            min-width: 40px;
+            padding: 0 12px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: var(--muted);
+            color: var(--text);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s, background 0.15s;
+        }
+        .carousel-btn:active { transform: scale(0.95); }
+        .carousel-btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+        .carousel-btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* Kreis-Rad – immer sichtbar bei mode-wheel */
+        .mini-wheel-wrap {
+            display: none;
+            justify-content: center;
+            width: 100%;
+            padding: 4px 0 2px;
+            flex-shrink: 0;
+        }
+        body.mode-wheel .mini-wheel-wrap {
+            display: flex;
+        }
+        .mini-wheel {
+            position: relative;
+            width: 210px;
+            height: 210px;
+            border-radius: 50%;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+        }
+        .mini-wheel .nbtn {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            font-size: 17px;
+        }
+        .mini-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--muted);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+        .mini-center:active { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
+
+        /* Gemeinsame Nummern-Buttons (Side + Wheel) */
         .nbtn {
             width: 46px;
             height: 46px;
@@ -331,7 +452,6 @@
             justify-content: center;
             cursor: pointer;
             flex-shrink: 0;
-            scroll-snap-align: center;
             transition: transform 0.12s, background 0.15s, box-shadow 0.15s, opacity 0.2s;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
@@ -352,91 +472,6 @@
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
             transform: scale(1.06);
         }
-
-        .nums-cancel {
-            width: 46px;
-            height: 46px;
-            min-width: 46px;
-            border-radius: 50%;
-            background: transparent;
-            border: 2px solid var(--border);
-            color: var(--text);
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            opacity: 0.7;
-            transition: transform 0.12s, opacity 0.15s;
-        }
-        .nums-cancel:active { transform: scale(0.9); opacity: 1; }
-
-        /* Kreis-Rad – absolut positioniert, Grid unverändert */
-        .mini-wheel-wrap {
-            position: absolute;
-            left: 50%;
-            bottom: 8px;
-            transform: translateX(-50%) translateY(16px);
-            display: none;
-            justify-content: center;
-            z-index: 10;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s, transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
-        }
-        .mini-wheel-wrap.show {
-            display: flex;
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateX(-50%) translateY(0);
-        }
-        .mini-wheel {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
-            animation: fadeUp 0.3s ease;
-        }
-        .mini-wheel .nbtn {
-            position: absolute;
-            width: 42px;
-            height: 42px;
-            min-width: 42px;
-            font-size: 18px;
-        }
-        .mini-center {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--muted);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            cursor: pointer;
-            opacity: 0.8;
-            transition: transform 0.15s, opacity 0.15s;
-        }
-        .mini-center:active { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
-
-        /* Platzhalter unten, damit Inhalt nicht unter den absolut positionierten Pickern liegt */
-        .picker-spacer {
-            height: 0;
-            flex-shrink: 0;
-            transition: height 0.25s ease;
-            width: 100%;
-        }
-        .picker-spacer.active-bottom { height: var(--picker-h); }
-        .picker-spacer.active-wheel { height: 236px; }
 
         /* Settings */
         .overlay {
@@ -626,19 +661,21 @@
         .dialog-btns { display: flex; gap: 10px; }
         .dialog-btns .action-btn { flex: 1; height: 44px; font-size: 14px; margin: 0; }
 
-        /* Landscape: mehr Platz */
         @media (orientation: landscape) and (max-height: 500px) {
             body { padding: calc(4px + var(--safe-t)) calc(8px + var(--safe-r)) calc(4px + var(--safe-b)) calc(8px + var(--safe-l)); }
             .title { font-size: 13px; }
             .msg { min-height: 14px; font-size: 11px; margin-bottom: 2px; }
-            .grid { width: min(100%, calc(100dvh - 100px)); }
+            .grid { width: min(100%, calc(100dvh - 130px)); }
+            body.mode-wheel .grid { width: min(100%, calc(100dvh - 200px)); }
             .cell { font-size: 15px; }
-            .nbtn { width: 38px; height: 38px; min-width: 38px; font-size: 16px; }
-            .side-nums .nbtn { width: 34px; height: 34px; min-width: 34px; }
-            .picker-spacer.active-bottom { height: 56px; }
-            .picker-spacer.active-wheel { height: 200px; }
-            .mini-wheel { width: 180px; height: 180px; }
-            .mini-wheel .nbtn { width: 36px; height: 36px; min-width: 36px; }
+            .nbtn { width: 36px; height: 36px; min-width: 36px; font-size: 15px; }
+            .side-nums .nbtn { width: 32px; height: 32px; min-width: 32px; }
+            .carousel-outer { height: 48px; }
+            .carousel-item { height: 40px; font-size: 18px; }
+            .mini-wheel { width: 160px; height: 160px; }
+            .mini-wheel .nbtn { width: 32px; height: 32px; min-width: 32px; font-size: 14px; }
+            .carousel-actions { margin-top: 2px; }
+            .carousel-btn { height: 30px; font-size: 12px; padding: 0 12px; }
         }
         @media (min-width: 400px) {
             .cell { font-size: calc(23px * var(--fs)); }
@@ -646,32 +683,35 @@
         }
     </style>
 </head>
-<body>
+<body class="mode-bottom">
     <div class="header">
         <div class="title" id="app-title"></div>
-        <button class="gear" id="gear" title="Einstellungen">⚙️</button>
+        <button class="gear" id="gear" aria-label="Settings">⚙️</button>
     </div>
     <div class="msg" id="msg"></div>
 
     <div class="main">
         <div class="board-row" id="board-row">
             <div class="grid" id="grid"></div>
-            <!-- Rechte Zahlenleiste (absolut, Grid bleibt stabil) -->
             <div class="side-nums" id="side-nums"></div>
         </div>
 
-        <!-- Spacer reserviert Platz, ohne dass Grid-Größe springt -->
-        <div class="picker-spacer" id="picker-spacer"></div>
-
-        <!-- Untere horizontale Leiste (absolut) -->
-        <div class="bottom-nums" id="bottom-nums">
-            <div class="nums-bar" id="nums-bar"></div>
+        <!-- Endloses Karussell (mode-bottom) – immer sichtbar -->
+        <div class="carousel-wrap" id="carousel-wrap">
+            <div class="carousel-outer">
+                <div class="carousel-center-mark"></div>
+                <div class="carousel-track" id="carousel-track"></div>
+            </div>
+            <div class="carousel-actions">
+                <button class="carousel-btn" id="btn-clear-cell" disabled aria-label="Clear">✕</button>
+                <button class="carousel-btn primary" id="btn-place" disabled aria-label="Place">✓</button>
+            </div>
         </div>
 
-        <!-- Mini Kreis-Rad (absolut) -->
+        <!-- Kreis-Rad (mode-wheel) – immer sichtbar -->
         <div class="mini-wheel-wrap" id="mini-wheel-wrap">
             <div class="mini-wheel" id="mini-wheel">
-                <div class="mini-center" id="mini-cancel">✕</div>
+                <div class="mini-center" id="mini-cancel" title="Auswahl aufheben">✕</div>
             </div>
         </div>
     </div>
@@ -699,7 +739,7 @@
             <div class="row">
                 <span class="row-label" data-i18n="picker">Zahlen-Position</span>
                 <div class="row-ctrl chip-group" id="picker-chips">
-                    <button class="chip on" data-picker="bottom" data-i18n="pos_bottom">Unten</button>
+                    <button class="chip on" data-picker="bottom" data-i18n="pos_bottom">Karussell</button>
                     <button class="chip" data-picker="side" data-i18n="pos_side">Rechts</button>
                     <button class="chip" data-picker="wheel" data-i18n="pos_wheel">Kreis</button>
                 </div>
@@ -761,9 +801,7 @@
                     <button class="chip" id="fs-btn" data-i18n="fs_toggle">Aktivieren</button>
                 </div>
             </div>
-            <div class="row">
-                <span class="row-label" style="font-size:12px;opacity:0.6" data-i18n="hint">.</span>
-            </div>
+            
         </div>
     </div>
 
@@ -781,44 +819,54 @@
 <script>
 const I18N = {
     de: {
-        app_title:'', settings:'Einstellungen', done:'Fertig',
+        app_title:'Erweitertes Sudoku', settings:'Einstellungen', done:'Fertig',
         language:'Sprache', picker:'Zahlen-Position',
-        pos_bottom:'Unten', pos_side:'Rechts', pos_wheel:'Kreis',
+        pos_bottom:'Karussell', pos_side:'Rechts', pos_wheel:'Kreis',
         difficulty:'Schwierigkeit', easy:'Leicht', normal:'Normal',
         instant:'Sofort prüfen', dark:'Dark Mode', fontsize:'Schriftgröße', btncolor:'Akzent-Farbe',
         background:'Hintergrund', fullscreen:'Vollbild', fs_toggle:'Aktivieren', fs_exit:'Beenden',
-        
+        hint:'Zelle tippen → Zahl im Karussell wählen (Mitte) → Setzen. Feldgröße bleibt stabil.',
         new:'Neues Spiel', check:'Prüfen', correct:'Korrigieren',
         new_title:'Neues Spiel?', new_msg:'Weiterspielen oder neues Rätsel starten?',
         continue:'Weiterspielen', start_new:'Neu starten',
-        msg_new:'Neues Spiel!', msg_diff:'Schwierigkeit:',
-        msg_instant_on:'Sofort-Prüfung an', msg_instant_off:'Sofort-Prüfung aus',
+        msg_new:'Neues Spiel gestartet!', msg_diff:'Schwierigkeit:',
+        msg_instant_on:'Sofort-Prüfung eingeschaltet', msg_instant_off:'Sofort-Prüfung ausgeschaltet',
         msg_dark_on:'Dark Mode an', msg_dark_off:'Dark Mode aus',
-        msg_used:'Zahl schon 9× verwendet!', msg_pick:'Zahl wählen – Feld bleibt sichtbar',
-        msg_conflict:'Passt hier nicht!', msg_empty:'Noch {n} Zellen leer',
-        msg_wrong:'Noch {n} Fehler', msg_solved:'Gelöst! 🎉',
-        msg_deleted:'{n} Fehler gelöscht – tippe markierte Zellen',
-        msg_no_wrong:'Keine Fehler gefunden', msg_saved:'Spielstand geladen'
+        msg_used:'Diese Zahl ist schon 9× vergeben!', msg_pick:'Zelle gewählt – Zahl in der Mitte setzen',
+        msg_conflict:'Diese Zahl passt hier nicht!', msg_empty:'Noch {n} Zellen leer',
+        msg_wrong:'Noch {n} Fehler gefunden', msg_solved:'Geschafft! Rätsel gelöst 🎉',
+        msg_deleted:'{n} Fehler entfernt – tippe die markierten Zellen',
+        msg_no_wrong:'Keine Fehler gefunden', msg_saved:'Spielstand wiederhergestellt',
+        msg_placed:'Zahl {n} gesetzt', msg_cleared:'Zelle geleert',
+        msg_select:'Zelle auswählen, dann Zahl setzen',
+        msg_same:'Alle {n}er grün markiert',
+        carousel_hint:'← scrollen · Mitte = gewählte Zahl · Setzen tippen →',
+        btn_place:'Setzen', btn_clear:'Löschen'
     },
     ru: {
-         settings:'Настройки', done:'Готово',
+        app_title:'Расширенное Судоку', settings:'Настройки', done:'Готово',
         language:'Язык', picker:'Позиция цифр',
-        pos_bottom:'Внизу', pos_side:'Справа', pos_wheel:'Круг',
+        pos_bottom:'Карусель', pos_side:'Справа', pos_wheel:'Круг',
         difficulty:'Сложность', easy:'Лёгкий', normal:'Обычный',
         instant:'Мгновенная проверка', dark:'Тёмный режим', fontsize:'Размер шрифта', btncolor:'Цвет акцента',
         background:'Фон', fullscreen:'Полный экран', fs_toggle:'Включить', fs_exit:'Выйти',
-        hint:'',
+        hint:'Выберите клетку → цифру в центре карусели → Поставить. Размер поля стабилен.',
         new:'Новая игра', check:'Проверить', correct:'Исправить',
         new_title:'Новая игра?', new_msg:'Продолжить или начать новое?',
         continue:'Продолжить', start_new:'Начать новую',
-        msg_new:'Новая игра!', msg_diff:'Сложность:',
+        msg_new:'Новая игра начата!', msg_diff:'Сложность:',
         msg_instant_on:'Мгновенная проверка вкл.', msg_instant_off:'Мгновенная проверка выкл.',
         msg_dark_on:'Тёмный режим вкл.', msg_dark_off:'Тёмный режим выкл.',
-        msg_used:'Цифра уже использована 9 раз!', msg_pick:'Выберите цифру – поле видно',
-        msg_conflict:'Сюда не подходит!', msg_empty:'Ещё {n} пустых клеток',
+        msg_used:'Эта цифра уже использована 9 раз!', msg_pick:'Клетка выбрана – поставьте цифру в центре',
+        msg_conflict:'Эта цифра сюда не подходит!', msg_empty:'Ещё {n} пустых клеток',
         msg_wrong:'Ещё {n} ошибок', msg_solved:'Решено! 🎉',
         msg_deleted:'Удалено {n} ошибок – нажмите выделенные',
-        msg_no_wrong:'Ошибок нет', msg_saved:'Игра загружена'
+        msg_no_wrong:'Ошибок нет', msg_saved:'Игра загружена',
+        msg_placed:'Цифра {n} поставлена', msg_cleared:'Клетка очищена',
+        msg_select:'Выберите клетку, затем цифру',
+        msg_same:'Все {n} выделены зелёным',
+        carousel_hint:'← листайте · центр = выбранная цифра · Поставить →',
+        btn_place:'Поставить', btn_clear:'Удалить'
     }
 };
 let lang='de';
@@ -828,11 +876,11 @@ function applyI18n(){
         const k=el.getAttribute('data-i18n');
         if(I18N[lang][k]) el.textContent=I18N[lang][k];
     });
-    document.getElementById('app-title').textContent=t('app_title');
-    document.documentElement.lang=lang;
+        document.documentElement.lang=lang;
     updateDiffLabel(); updateFontLabel();
     const fsBtn=document.getElementById('fs-btn');
     fsBtn.textContent=document.fullscreenElement?t('fs_exit'):t('fs_toggle');
+    /* buttons are icons only – no text */
 }
 
 class Sudoku {
@@ -887,18 +935,22 @@ class Sudoku {
 }
 
 let game=null, selectedR=-1, selectedC=-1, isCorrectMode=false, highlightNum=0;
+let carouselCenterNum=5;
 let instantCheck=false, darkMode=false, fontScale=1, pickerMode='bottom', accent='#007aff', bgStyle='solid';
 const $=id=>document.getElementById(id);
-const gridEl=$('grid'), msgEl=$('msg'), boardRow=$('board-row');
-const bottomNums=$('bottom-nums'), sideNums=$('side-nums'), miniWheelWrap=$('mini-wheel-wrap');
-const numsBar=$('nums-bar'), miniWheel=$('mini-wheel'), pickerSpacer=$('picker-spacer');
+const gridEl=$('grid'), msgEl=$('msg');
+const sideNums=$('side-nums'), miniWheel=$('mini-wheel');
+const carouselTrack=$('carousel-track');
+const btnPlace=$('btn-place'), btnClearCell=$('btn-clear-cell');
 
-function savePrefs(){ try{ localStorage.setItem('sudokuV4prefs',JSON.stringify({lang,darkMode,instantCheck,fontScale,pickerMode,accent,bgStyle,difficulty:game?game.difficulty:'easy'})); }catch(e){} }
-function saveGame(){ if(!game) return; try{ localStorage.setItem('sudokuV4game',JSON.stringify(game.toJSON())); }catch(e){} }
-function loadPrefs(){ try{ const p=JSON.parse(localStorage.getItem('sudokuV4prefs')||'{}'); if(p.lang) lang=p.lang; if(p.darkMode!=null) darkMode=p.darkMode; if(p.instantCheck!=null) instantCheck=p.instantCheck; if(p.fontScale) fontScale=p.fontScale; if(p.pickerMode) pickerMode=p.pickerMode; if(p.accent) accent=p.accent; if(p.bgStyle) bgStyle=p.bgStyle; return p.difficulty||'easy'; }catch(e){ return 'easy'; } }
-function loadGame(){ try{ const raw=localStorage.getItem('sudokuV4game'); if(!raw) return null; return Sudoku.fromJSON(JSON.parse(raw)); }catch(e){ return null; } }
+function savePrefs(){ try{ localStorage.setItem('sudokuV5prefs',JSON.stringify({lang,darkMode,instantCheck,fontScale,pickerMode,accent,bgStyle,difficulty:game?game.difficulty:'easy'})); }catch(e){} }
+function saveGame(){ if(!game) return; try{ localStorage.setItem('sudokuV5game',JSON.stringify(game.toJSON())); }catch(e){} }
+function loadPrefs(){ try{ const p=JSON.parse(localStorage.getItem('sudokuV5prefs')||localStorage.getItem('sudokuV4prefs')||'{}'); if(p.lang) lang=p.lang; if(p.darkMode!=null) darkMode=p.darkMode; if(p.instantCheck!=null) instantCheck=p.instantCheck; if(p.fontScale) fontScale=p.fontScale; if(p.pickerMode) pickerMode=p.pickerMode; if(p.accent) accent=p.accent; if(p.bgStyle) bgStyle=p.bgStyle; return p.difficulty||'easy'; }catch(e){ return 'easy'; } }
+function loadGame(){ try{ const raw=localStorage.getItem('sudokuV5game')||localStorage.getItem('sudokuV4game'); if(!raw) return null; return Sudoku.fromJSON(JSON.parse(raw)); }catch(e){ return null; } }
 
-function showMsg(txt,ms=2200){ msgEl.textContent=txt; msgEl.style.opacity='1'; clearTimeout(msgEl._t); msgEl._t=setTimeout(()=>{ if(!game||!game.isComplete()){ msgEl.style.opacity='0'; setTimeout(()=>{ if(!game||!game.isComplete()) msgEl.textContent=''; },250); } },ms); }
+function showMsg(txt,ms=2400){
+    /* no text during play – purely visual */
+}
 function updateDiffLabel(){ $('diff-label').textContent=$('diff-toggle').checked?t('normal'):t('easy'); }
 function updateFontLabel(){ if(fontScale>=1.25) $('font-label').textContent=lang==='ru'?'Большой':'Groß'; else if(fontScale>=1.1) $('font-label').textContent=lang==='ru'?'Средний':'Mittel'; else $('font-label').textContent=lang==='ru'?'Обычный':'Normal'; }
 function applyTheme(){ document.body.classList.toggle('dark',darkMode); document.documentElement.style.setProperty('--accent',accent); document.querySelector('meta[name="theme-color"]').content=darkMode?'#0d0d12':'#f0f2f5'; applyBg(); document.documentElement.style.setProperty('--fs',fontScale); updateFontLabel(); }
@@ -909,9 +961,18 @@ function applyBg(){
     else { document.body.style.backgroundImage=map[bgStyle]; document.body.style.backgroundColor='transparent'; }
 }
 
-function makeNumBtn(n, extraClass){
+function applyPickerMode(){
+    document.body.classList.remove('mode-bottom','mode-side','mode-wheel');
+    document.body.classList.add('mode-'+pickerMode);
+    buildSideNums();
+    buildWheel();
+    updateCarouselUsed();
+    updateActionButtons();
+}
+
+function makeNumBtn(n){
     const b=document.createElement('div');
-    b.className='nbtn'+(extraClass?' '+extraClass:'');
+    b.className='nbtn';
     b.textContent=n;
     b.dataset.n=n;
     if(game&&game.used[n-1]>=9) b.classList.add('used');
@@ -919,6 +980,149 @@ function makeNumBtn(n, extraClass){
     b.addEventListener('click',()=>pickNumber(n));
     return b;
 }
+
+function buildSideNums(){
+    sideNums.innerHTML='';
+    for(let n=1;n<=9;n++) sideNums.appendChild(makeNumBtn(n));
+}
+
+function buildWheel(){
+    miniWheel.querySelectorAll('.nbtn').forEach(el=>el.remove());
+    const size=210, radius=size*0.34, cx=size/2, cy=size/2;
+    for(let n=1;n<=9;n++){
+        const angle=(n-1)*40-90, rad=angle*Math.PI/180;
+        const x=cx+radius*Math.cos(rad)-20, y=cy+radius*Math.sin(rad)-20;
+        const btn=makeNumBtn(n);
+        btn.style.left=x+'px';
+        btn.style.top=y+'px';
+        miniWheel.appendChild(btn);
+    }
+}
+
+/* ===== ENDLOSES KARUSSELL ===== */
+const CAROUSEL_REPEATS=15; // viele Wiederholungen → endloser Eindruck
+function buildCarousel(){
+    carouselTrack.innerHTML='';
+    // viele Durchläufe 1-9
+    for(let rep=0;rep<CAROUSEL_REPEATS;rep++){
+        for(let n=1;n<=9;n++){
+            const item=document.createElement('div');
+            item.className='carousel-item';
+            item.dataset.n=n;
+            item.dataset.idx=rep*9+(n-1);
+            item.textContent=n;
+            if(game&&game.used[n-1]>=9) item.classList.add('used');
+            item.addEventListener('click',()=>{
+                // beim Tippen auf eine Zahl: dorthin scrollen und ggf. setzen
+                scrollCarouselToNum(n);
+                if(selectedR>=0){
+                    setTimeout(()=>pickNumber(n),180);
+                } else {
+                    showMsg(t('msg_select'),2000);
+                }
+            });
+            carouselTrack.appendChild(item);
+        }
+    }
+    // in die Mitte der 5er-Reihe scrollen (ca. Mitte des Tracks)
+    requestAnimationFrame(()=>{
+        const midRep=Math.floor(CAROUSEL_REPEATS/2);
+        const targetIdx=midRep*9+4; // Zahl 5
+        const items=carouselTrack.querySelectorAll('.carousel-item');
+        if(items[targetIdx]){
+            items[targetIdx].scrollIntoView({inline:'center',block:'nearest',behavior:'auto'});
+            updateCarouselCenter();
+        }
+    });
+}
+
+function updateCarouselUsed(){
+    if(!game) return;
+    carouselTrack.querySelectorAll('.carousel-item').forEach(item=>{
+        const n=parseInt(item.dataset.n);
+        item.classList.toggle('used', game.used[n-1]>=9);
+    });
+    // Side + Wheel auch aktualisieren
+    document.querySelectorAll('.nbtn').forEach(b=>{
+        const n=parseInt(b.dataset.n);
+        if(!n) return;
+        b.classList.toggle('used', game.used[n-1]>=9);
+        b.classList.toggle('highlight-num', highlightNum===n);
+    });
+}
+
+function getCarouselCenterNum(){
+    const track=carouselTrack;
+    const rect=track.getBoundingClientRect();
+    const centerX=rect.left+rect.width/2;
+    let best=null, bestDist=Infinity;
+    track.querySelectorAll('.carousel-item').forEach(item=>{
+        const r=item.getBoundingClientRect();
+        const mid=r.left+r.width/2;
+        const d=Math.abs(mid-centerX);
+        if(d<bestDist){ bestDist=d; best=item; }
+    });
+    if(best){
+        track.querySelectorAll('.carousel-item.center').forEach(el=>el.classList.remove('center'));
+        best.classList.add('center');
+        return parseInt(best.dataset.n);
+    }
+    return carouselCenterNum;
+}
+
+function updateCarouselCenter(){
+    carouselCenterNum=getCarouselCenterNum();
+    updateActionButtons();
+}
+
+function scrollCarouselToNum(n){
+    const items=[...carouselTrack.querySelectorAll('.carousel-item')];
+    const trackRect=carouselTrack.getBoundingClientRect();
+    const centerX=trackRect.left+trackRect.width/2;
+    // nächstes Item mit dieser Zahl, das nahe der Mitte ist
+    let best=null, bestDist=Infinity;
+    items.forEach(item=>{
+        if(parseInt(item.dataset.n)!==n) return;
+        const r=item.getBoundingClientRect();
+        const mid=r.left+r.width/2;
+        const d=Math.abs(mid-centerX);
+        if(d<bestDist){ bestDist=d; best=item; }
+    });
+    if(best) best.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+}
+
+let scrollTimer=null;
+let isUserScrolling=false;
+carouselTrack.addEventListener('touchstart',()=>{ isUserScrolling=true; },{passive:true});
+carouselTrack.addEventListener('mousedown',()=>{ isUserScrolling=true; });
+carouselTrack.addEventListener('scroll',()=>{
+    clearTimeout(scrollTimer);
+    scrollTimer=setTimeout(()=>{
+        updateCarouselCenter();
+        const track=carouselTrack;
+        const rect=track.getBoundingClientRect();
+        const centerX=rect.left+rect.width/2;
+        let best=null, bestDist=Infinity;
+        track.querySelectorAll('.carousel-item').forEach(item=>{
+            const r=item.getBoundingClientRect();
+            const mid=r.left+r.width/2;
+            const d=Math.abs(mid-centerX);
+            if(d<bestDist){ bestDist=d; best=item; }
+        });
+        if(best && bestDist>2){
+            best.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+            setTimeout(updateCarouselCenter, 120);
+        } else {
+            updateCarouselCenter();
+            // Nach Scroll-Stop: wenn Zelle gewählt → Zahl in der Mitte automatisch setzen
+            if(isUserScrolling && selectedR>=0 && selectedC>=0){
+                isUserScrolling=false;
+                const n=carouselCenterNum;
+                if(n>=1 && n<=9) pickNumber(n);
+            }
+        }
+    },100);
+},{passive:true});
 
 function clearSameHighlight(){
     document.querySelectorAll('.cell.same').forEach(el=>el.classList.remove('same'));
@@ -937,61 +1141,20 @@ function highlightSame(n){
         }
     }
     document.querySelectorAll(`.nbtn[data-n="${n}"]`).forEach(el=>el.classList.add('highlight-num'));
+    showMsg(t('msg_same').replace('{n}',n),1800);
 }
 
-function hideAllPickers(){
-    bottomNums.classList.remove('show');
-    sideNums.classList.remove('show');
-    miniWheelWrap.classList.remove('show');
-    boardRow.classList.remove('has-side');
-    pickerSpacer.className='picker-spacer';
+function updateActionButtons(){
+    const hasSel=selectedR>=0&&selectedC>=0;
+    const cellHasVal=hasSel&&game&&game.grid[selectedR][selectedC]>0;
+    btnPlace.disabled=!hasSel;
+    btnClearCell.disabled=!hasSel||!cellHasVal||(game&&game.isOrig(selectedR,selectedC));
 }
 
-function showPicker(){
-    hideAllPickers();
-    if(pickerMode==='bottom'){
-        numsBar.innerHTML='';
-        const cancel=document.createElement('div');
-        cancel.className='nums-cancel';
-        cancel.textContent='✕';
-        cancel.addEventListener('click',closePicker);
-        numsBar.appendChild(cancel);
-        for(let n=1;n<=9;n++) numsBar.appendChild(makeNumBtn(n));
-        bottomNums.classList.add('show');
-        pickerSpacer.classList.add('active-bottom');
-    } else if(pickerMode==='side'){
-        sideNums.innerHTML='';
-        for(let n=1;n<=9;n++) sideNums.appendChild(makeNumBtn(n));
-        const cancel=document.createElement('div');
-        cancel.className='nbtn';
-        cancel.textContent='✕';
-        cancel.style.opacity='0.6';
-        cancel.addEventListener('click',closePicker);
-        sideNums.appendChild(cancel);
-        sideNums.classList.add('show');
-        boardRow.classList.add('has-side');
-    } else {
-        // wheel
-        miniWheel.querySelectorAll('.nbtn').forEach(el=>el.remove());
-        const size=220, radius=size*0.34, cx=size/2, cy=size/2;
-        for(let n=1;n<=9;n++){
-            const angle=(n-1)*40-90, rad=angle*Math.PI/180;
-            const x=cx+radius*Math.cos(rad)-21, y=cy+radius*Math.sin(rad)-21;
-            const btn=makeNumBtn(n);
-            btn.style.left=x+'px';
-            btn.style.top=y+'px';
-            miniWheel.appendChild(btn);
-        }
-        miniWheelWrap.classList.add('show');
-        pickerSpacer.classList.add('active-wheel');
-    }
-    showMsg(t('msg_pick'),2500);
-}
-
-function closePicker(){
-    hideAllPickers();
+function deselect(){
     document.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
     selectedR=selectedC=-1;
+    updateActionButtons();
 }
 
 function renderGrid(){
@@ -1013,37 +1176,36 @@ function onCell(r,c,cell){
             cell.textContent=n; cell.classList.remove('pulse'); cell.classList.add('valid','place-anim');
             game.grid[r][c]=n; game.used[n-1]++; delete cell.dataset.correct; saveGame();
             highlightSame(n);
+            updateCarouselUsed();
+            showMsg(t('msg_placed').replace('{n}',n),1600);
             if(game.isComplete()) celebrate();
         }
         return;
     }
     if(game.isOrig(r,c)){
-        // feste Zahl: nur gleiche Zahlen grün markieren
-        selectedR=selectedC=-1;
-        document.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
-        hideAllPickers();
+        deselect();
         const v=game.grid[r][c];
-        if(v) highlightSame(v);
+        if(v){
+            highlightSame(v);
+            if(pickerMode==='bottom') scrollCarouselToNum(v);
+        }
         return;
     }
-    // gefüllte (eigene) Zelle: einmal tippen = Highlight + Auswahl, nochmal tippen = löschen
+    // eigene gefüllte Zelle
     if(cell.textContent){
         const old=parseInt(cell.textContent);
         if(selectedR===r && selectedC===c){
             // zweites Tippen → löschen
-            cell.textContent=''; game.grid[r][c]=0; game.used[old-1]--;
-            cell.classList.remove('valid','correct','incorrect','same','place-anim');
-            clearSameHighlight();
-            saveGame();
-            closePicker();
+            clearCell(r,c);
             return;
         }
-        // erstes Tippen → auswählen + gleiche Zahlen grün
         selectedR=r; selectedC=c;
         document.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
         cell.classList.add('sel');
         highlightSame(old);
-        showPicker(); // Picker anzeigen, damit man überschreiben kann
+        if(pickerMode==='bottom') scrollCarouselToNum(old);
+        updateActionButtons();
+        showMsg(t('msg_pick'),2200);
         return;
     }
     // leere Zelle
@@ -1051,36 +1213,86 @@ function onCell(r,c,cell){
     document.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
     cell.classList.add('sel');
     clearSameHighlight();
-    showPicker();
+    updateActionButtons();
+    showMsg(t('msg_pick'),2200);
+}
+
+function clearCell(r,c){
+    if(game.isOrig(r,c)) return;
+    const cell=gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+    if(!cell||!cell.textContent) return;
+    const old=parseInt(cell.textContent);
+    cell.textContent='';
+    game.grid[r][c]=0;
+    game.used[old-1]--;
+    cell.classList.remove('valid','correct','incorrect','same','place-anim');
+    clearSameHighlight();
+    saveGame();
+    updateCarouselUsed();
+    updateActionButtons();
+    showMsg(t('msg_cleared'),1600);
+    deselect();
 }
 
 function pickNumber(n){
-    if(selectedR<0||selectedC<0) return;
-    if(game.used[n-1]>=9 && game.grid[selectedR][selectedC]!==n){ showMsg(t('msg_used')); return; }
+    if(selectedR<0||selectedC<0){
+        showMsg(t('msg_select'),2000);
+        return;
+    }
+    if(game.used[n-1]>=9 && game.grid[selectedR][selectedC]!==n){
+        showMsg(t('msg_used'),2200);
+        return;
+    }
     const conf=game.conflicts(selectedR,selectedC,n);
     if(conf.length){
-        conf.forEach(({r,c})=>{ const el=gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`); if(el){ el.classList.add('conflict'); setTimeout(()=>el.classList.remove('conflict'),1500); } });
-        showMsg(t('msg_conflict')); return;
+        conf.forEach(({r,c})=>{
+            const el=gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+            if(el){ el.classList.add('conflict'); setTimeout(()=>el.classList.remove('conflict'),1500); }
+        });
+        showMsg(t('msg_conflict'),2200);
+        return;
     }
     const cell=gridEl.querySelector(`[data-r="${selectedR}"][data-c="${selectedC}"]`);
-    // alte Zahl freigeben, falls überschrieben
     if(cell.textContent){
         const old=parseInt(cell.textContent);
         game.used[old-1]--;
     }
-    cell.textContent=n; game.grid[selectedR][selectedC]=n; game.used[n-1]++;
+    cell.textContent=n;
+    game.grid[selectedR][selectedC]=n;
+    game.used[n-1]++;
     cell.classList.remove('incorrect','correct');
     cell.classList.add('place-anim');
     if(instantCheck){
-        if(n===game.solution[selectedR][selectedC]){ cell.classList.add('correct'); setTimeout(()=>{ cell.classList.remove('correct'); cell.classList.add('valid'); },700); }
-        else { cell.classList.add('incorrect'); setTimeout(()=>cell.classList.remove('incorrect'),700); }
+        if(n===game.solution[selectedR][selectedC]){
+            cell.classList.add('correct');
+            setTimeout(()=>{ cell.classList.remove('correct'); cell.classList.add('valid'); },700);
+        } else {
+            cell.classList.add('incorrect');
+            setTimeout(()=>cell.classList.remove('incorrect'),700);
+        }
     } else cell.classList.add('valid');
     highlightSame(n);
-    closePicker(); saveGame();
+    saveGame();
+    updateCarouselUsed();
+    updateActionButtons();
+    showMsg(t('msg_placed').replace('{n}',n),1600);
     if(game.isComplete()) celebrate();
+    // Auswahl behalten, damit man schnell überschreiben kann
 }
 
-$('mini-cancel').addEventListener('click',closePicker);
+btnPlace.addEventListener('click',()=>{
+    if(selectedR<0){ showMsg(t('msg_select'),2000); return; }
+    pickNumber(carouselCenterNum);
+});
+btnClearCell.addEventListener('click',()=>{
+    if(selectedR>=0) clearCell(selectedR,selectedC);
+});
+
+$('mini-cancel').addEventListener('click',()=>{
+    deselect();
+    clearSameHighlight();
+    showMsg(t('msg_select'),1800);
+});
 
 function celebrate(){
     showMsg(t('msg_solved'),5000);
@@ -1092,12 +1304,18 @@ function celebrate(){
             setTimeout(()=>cell.classList.remove('sel'),500);
         }, i*8);
     });
-    try{ localStorage.removeItem('sudokuV4game'); }catch(e){}
+    try{ localStorage.removeItem('sudokuV5game'); localStorage.removeItem('sudokuV4game'); }catch(e){}
+    deselect();
 }
 function startNew(diff){
     game=new Sudoku(diff||($('diff-toggle').checked?'normal':'easy'));
     isCorrectMode=false; $('btn-correct').classList.remove('active');
-    selectedR=selectedC=-1; clearSameHighlight(); closePicker(); renderGrid(); saveGame(); showMsg(t('msg_new'));
+    selectedR=selectedC=-1; clearSameHighlight();
+    renderGrid();
+    updateCarouselUsed();
+    updateActionButtons();
+    saveGame();
+    showMsg(t('msg_new'),2200);
 }
 
 $('btn-new').addEventListener('click',()=>{
@@ -1109,23 +1327,29 @@ $('dlg-continue').addEventListener('click',()=>$('new-dialog').classList.remove(
 $('dlg-new').addEventListener('click',()=>{ $('new-dialog').classList.remove('open'); startNew(); });
 
 $('btn-check').addEventListener('click',()=>{
-    isCorrectMode=false; $('btn-correct').classList.remove('active'); $('settings').classList.remove('open'); closePicker();
-    clearSameHighlight();
+    isCorrectMode=false; $('btn-correct').classList.remove('active'); $('settings').classList.remove('open');
+    clearSameHighlight(); deselect();
     let empty=0,wrong=0;
     for(let r=0;r<9;r++) for(let c=0;c<9;c++){
         const cell=gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
         if(game.grid[r][c]===0) empty++;
-        else if(!game.isOrig(r,c)){ if(game.grid[r][c]===game.solution[r][c]) cell.classList.add('correct'); else { cell.classList.add('incorrect'); wrong++; } }
+        else if(!game.isOrig(r,c)){
+            if(game.grid[r][c]===game.solution[r][c]) cell.classList.add('correct');
+            else { cell.classList.add('incorrect'); wrong++; }
+        }
     }
     if(empty>0) showMsg(t('msg_empty').replace('{n}',empty),4000);
     else if(wrong>0) showMsg(t('msg_wrong').replace('{n}',wrong),4000);
     else if(game.isComplete()) celebrate();
-    setTimeout(()=>{ document.querySelectorAll('.cell').forEach(c=>c.classList.remove('correct','incorrect')); if(!game.isComplete()) msgEl.textContent=''; },4000);
+    setTimeout(()=>{
+        document.querySelectorAll('.cell').forEach(c=>c.classList.remove('correct','incorrect'));
+        if(!game.isComplete()) msgEl.textContent='';
+    },4000);
 });
 
 $('btn-correct').addEventListener('click',()=>{
-    isCorrectMode=!isCorrectMode; $('btn-correct').classList.toggle('active',isCorrectMode); $('settings').classList.remove('open'); closePicker();
-    clearSameHighlight();
+    isCorrectMode=!isCorrectMode; $('btn-correct').classList.toggle('active',isCorrectMode); $('settings').classList.remove('open');
+    clearSameHighlight(); deselect();
     if(isCorrectMode){
         let del=0;
         for(let r=0;r<9;r++) for(let c=0;c<9;c++){
@@ -1135,7 +1359,8 @@ $('btn-correct').addEventListener('click',()=>{
                 cell.textContent=''; cell.classList.add('pulse'); cell.dataset.correct=game.solution[r][c]; del++;
             }
         }
-        saveGame(); showMsg(del?t('msg_deleted').replace('{n}',del):t('msg_no_wrong'),4500);
+        saveGame(); updateCarouselUsed();
+        showMsg(del?t('msg_deleted').replace('{n}',del):t('msg_no_wrong'),4500);
     } else {
         document.querySelectorAll('.cell').forEach(c=>{ c.classList.remove('pulse'); delete c.dataset.correct; });
         msgEl.textContent='';
@@ -1161,8 +1386,9 @@ document.querySelectorAll('#picker-chips .chip').forEach(chip=>{
     chip.addEventListener('click',()=>{
         pickerMode=chip.dataset.picker;
         document.querySelectorAll('#picker-chips .chip').forEach(c=>c.classList.toggle('on',c===chip));
+        applyPickerMode();
         savePrefs();
-        if(selectedR>=0) showPicker();
+        showMsg(pickerMode==='bottom'?t('carousel_hint'): (pickerMode==='side'?'Zahlen rechts':'Kreis-Rad'),2000);
     });
 });
 $('diff-toggle').addEventListener('change',function(){ updateDiffLabel(); savePrefs(); showMsg(t('msg_diff')+' '+(this.checked?t('normal'):t('easy'))); });
@@ -1183,28 +1409,34 @@ $('fs-btn').addEventListener('click',()=>{
 document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement) $('fs-btn').textContent=t('fs_toggle'); });
 
 document.addEventListener('keydown',e=>{
-    if(selectedR<0) return;
-    if(e.key>='1'&&e.key<='9') pickNumber(parseInt(e.key));
-    else if(e.key==='Escape'){ closePicker(); clearSameHighlight(); }
+    if(e.key>='1'&&e.key<='9'){
+        if(selectedR>=0) pickNumber(parseInt(e.key));
+        else showMsg(t('msg_select'),1800);
+    }
+    else if(e.key==='Escape'){ deselect(); clearSameHighlight(); }
     else if(e.key==='Backspace'||e.key==='Delete'){
-        const cell=gridEl.querySelector(`[data-r="${selectedR}"][data-c="${selectedC}"]`);
-        if(cell&&cell.textContent&&!game.isOrig(selectedR,selectedC)){
-            const old=parseInt(cell.textContent); cell.textContent=''; game.grid[selectedR][selectedC]=0; game.used[old-1]--;
-            cell.classList.remove('valid','correct','incorrect','same','place-anim'); saveGame(); closePicker(); clearSameHighlight();
-        }
+        if(selectedR>=0) clearCell(selectedR,selectedC);
+    }
+    else if(e.key==='Enter'||e.key===' '){
+        if(selectedR>=0 && pickerMode==='bottom') pickNumber(carouselCenterNum);
     }
 });
 
 (function init(){
-    const diff=loadPrefs(); applyTheme(); applyI18n();
+    const diff=loadPrefs();
+    applyTheme();
+    applyI18n();
+    applyPickerMode();
+    buildCarousel();
     document.querySelectorAll('#lang-chips .chip').forEach(c=>c.classList.toggle('on',c.dataset.lang===lang));
     document.querySelectorAll('#picker-chips .chip').forEach(c=>c.classList.toggle('on',c.dataset.picker===pickerMode));
     document.querySelectorAll('#btn-colors .color-swatch').forEach(s=>s.classList.toggle('on',s.dataset.color===accent));
     document.querySelectorAll('#bg-options .bg-preview').forEach(p=>p.classList.toggle('on',p.dataset.bg===bgStyle));
     $('diff-toggle').checked=diff==='normal'; $('instant-toggle').checked=instantCheck; $('dark-toggle').checked=darkMode; updateDiffLabel();
     const saved=loadGame();
-    if(saved&&!saved.isComplete()){ game=saved; renderGrid(); showMsg(t('msg_saved'),2000); }
+    if(saved&&!saved.isComplete()){ game=saved; renderGrid(); updateCarouselUsed(); showMsg(t('msg_saved'),2200); }
     else startNew(diff);
+    updateActionButtons();
 })();
 </script>
 </body>
